@@ -14,7 +14,7 @@ import {
   message,
 } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Boxes, Calendar, TriangleAlert, Minus, Plus } from "lucide-react";
+import { Boxes, Calendar, Minus, Plus } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/src/lib/firebase/client";
 import {
@@ -24,13 +24,13 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
 import type { UploadFile } from "antd";
 import { uploadProductImage } from "@/src/lib/cloudinary/uploadProductImage";
 import ProductUpsertModal from "@/components/modals/ProductUpsertModal";
+import StockOutModal from "@/components/modals/StockOutModal";
 
 type Product = {
   id: string;
@@ -39,6 +39,7 @@ type Product = {
   quantity: number;
   minStock: number;
   expirationDate: string | null;
+  supplier?: string | null; //  NEW
   imageUrl: string | null;
   imagePublicId: string | null;
   imageFolder: string | null;
@@ -74,10 +75,17 @@ export default function AdminProductsPage() {
     quantity: 0,
     minStock: 0,
     expirationDate: "" as string,
+    supplier: "" as string, //  NEW
   });
 
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [saving, setSaving] = useState(false);
+
+  //  NEW: separate StockOut modal state
+  const [openStockOut, setOpenStockOut] = useState(false);
+  const [stockOutProduct, setStockOutProduct] = useState<Product | null>(null);
+  const [userName, setUserName] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
 
   const primaryBtnClass =
     "bg-primary hover:bg-hover border-primary hover:border-hover text-white";
@@ -88,11 +96,21 @@ export default function AdminProductsPage() {
       if (!u) {
         setUid(null);
         setIdToken(null);
+        setUserName("");
+        setUserEmail("");
         return;
       }
+
       setUid(u.uid);
       setIdToken(await u.getIdToken());
+
+      const email = (u.email || "").trim().toLowerCase();
+      const name = (u.displayName || "").trim();
+
+      setUserEmail(email);
+      setUserName(name || email || "Unknown");
     });
+
     return () => unsub();
   }, []);
 
@@ -111,6 +129,7 @@ export default function AdminProductsPage() {
             quantity: safeNum(v.quantity),
             minStock: safeNum(v.minStock),
             expirationDate: v.expirationDate ?? null,
+            supplier: v.supplier ?? null,
             imageUrl: v.imageUrl ?? null,
             imagePublicId: v.imagePublicId ?? null,
             imageFolder: v.imageFolder ?? null,
@@ -142,7 +161,10 @@ export default function AdminProductsPage() {
       const matchQ =
         !needle ||
         r.name.toLowerCase().includes(needle) ||
-        r.category.toLowerCase().includes(needle);
+        r.category.toLowerCase().includes(needle) ||
+        String(r.supplier ?? "")
+          .toLowerCase()
+          .includes(needle);
       const matchCat = !cat || r.category === cat;
       return matchQ && matchCat;
     });
@@ -155,6 +177,7 @@ export default function AdminProductsPage() {
       quantity: 0,
       minStock: 0,
       expirationDate: "",
+      supplier: "",
     });
     setFileList([]);
   }
@@ -173,6 +196,7 @@ export default function AdminProductsPage() {
       quantity: safeNum(p.quantity),
       minStock: safeNum(p.minStock),
       expirationDate: p.expirationDate ?? "",
+      supplier: String(p.supplier ?? ""),
     });
     setFileList([]);
     setOpenModal(true);
@@ -189,69 +213,103 @@ export default function AdminProductsPage() {
     if (quantity < 0 || minStock < 0)
       return message.error("Quantity and minimum stock must be 0 or higher");
 
+    const supplier = form.supplier.trim(); //  NEW
+
     setSaving(true);
     try {
-      let productId = editing?.id;
-
-      // Create doc first (to get folder)
-      if (!productId) {
-        const ref = doc(collection(db, "products"));
-        productId = ref.id;
-
-        await setDoc(ref, {
-          name,
-          category: form.category || "Uncategorized",
-          quantity,
-          minStock,
-          expirationDate: form.expirationDate ? form.expirationDate : null,
-          imageUrl: null,
-          imagePublicId: null,
-          imageFolder: `kalikascan/products/${productId}`,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          createdBy: uid,
-          updatedBy: uid,
-        });
-      }
-
-      // Upload/replace image if provided
       const file = fileList?.[0]?.originFileObj as File | undefined;
-      let imagePatch: any = {};
 
-      if (file) {
-        const up = await uploadProductImage({ idToken, productId, file });
+      let imagePatch: {
+        imageUrl?: string;
+        imagePublicId?: string;
+        imageFolder?: string;
+      } = {};
+
+      // create -> temp upload
+      if (file && !editing?.id) {
+        const tempId = `temp_${Date.now()}`;
+        const up = await uploadProductImage({
+          idToken,
+          productId: tempId,
+          file,
+        });
 
         imagePatch = {
           imageUrl: up.imageUrl,
           imagePublicId: up.publicId,
           imageFolder: up.folder,
         };
-
-        // delete old image if replacing
-        if (editing?.imagePublicId && editing.imagePublicId !== up.publicId) {
-          await fetch("/api/admin/cloudinary/delete", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ publicId: editing.imagePublicId }),
-          });
-        }
       }
 
-      await updateDoc(doc(db, "products", productId), {
-        name,
-        category: form.category || "Uncategorized",
-        quantity,
-        minStock,
-        expirationDate: form.expirationDate ? form.expirationDate : null,
-        ...imagePatch,
-        updatedAt: serverTimestamp(),
-        updatedBy: uid,
-      });
+      if (!editing?.id) {
+        //  CREATE via API (should create initial stock-in log too)
+        const res = await fetch("/api/admin/products/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            name,
+            category: form.category || "Uncategorized",
+            quantity,
+            minStock,
+            expirationDate: form.expirationDate ? form.expirationDate : null,
+            supplier: supplier ? supplier : null,
+            ...imagePatch,
+          }),
+        });
 
-      message.success(editing ? "Product updated" : "Product created");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Create failed");
+
+        message.success("Product created");
+      } else {
+        const productId = editing.id;
+
+        let patch: any = {
+          name,
+          category: form.category || "Uncategorized",
+          quantity,
+          minStock,
+          expirationDate: form.expirationDate ? form.expirationDate : null,
+          supplier: supplier ? supplier : null, //  supplier included
+        };
+
+        const file = fileList?.[0]?.originFileObj as File | undefined;
+        if (file) {
+          const up = await uploadProductImage({ idToken, productId, file });
+          patch.imageUrl = up.imageUrl;
+          patch.imagePublicId = up.publicId;
+          patch.imageFolder = up.folder;
+
+          if (editing?.imagePublicId && editing.imagePublicId !== up.publicId) {
+            await fetch("/api/admin/cloudinary/delete", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({ publicId: editing.imagePublicId }),
+            });
+          }
+        }
+
+        const res = await fetch(`/api/admin/products/${productId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(patch),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Update failed");
+
+        message.success("Product updated");
+      }
+
       setOpenModal(false);
       setEditing(null);
       resetForm();
@@ -294,18 +352,59 @@ export default function AdminProductsPage() {
     });
   }
 
-  async function changeQty(p: Product, delta: number) {
-    const next = Math.max(0, safeNum(p.quantity) + delta);
-    try {
-      await updateDoc(doc(db, "products", p.id), {
-        quantity: next,
-        updatedAt: serverTimestamp(),
-        updatedBy: uid ?? null,
-      });
-    } catch (e: any) {
-      console.error(e);
-      message.error(e?.message || "Failed to update quantity");
-    }
+  async function openStockInForProduct(p: Product) {
+    if (!idToken) return message.error("Not authenticated");
+
+    let qty = 1;
+    let supplier = "";
+
+    Modal.confirm({
+      title: `Stock-In: ${p.name}`,
+      content: (
+        <div className="space-y-3 pt-2">
+          <Input
+            type="number"
+            min={1}
+            defaultValue={qty}
+            onChange={(e) => (qty = Number(e.target.value))}
+            placeholder="Quantity"
+          />
+          <Input
+            defaultValue={supplier}
+            onChange={(e) => (supplier = e.target.value)}
+            placeholder="Supplier (optional)"
+          />
+        </div>
+      ),
+      okText: "Record Stock-In",
+      async onOk() {
+        const res = await fetch("/api/admin/stock-in/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            productId: p.id,
+            quantity: qty,
+            supplier,
+            stockInByName: userName || null,
+            stockInByEmail: userEmail || null,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Stock-in failed");
+        message.success("Stock-in recorded");
+      },
+    });
+  }
+
+  //  Stock-Out uses separate modal now
+  function openStockOutForProduct(p: Product) {
+    if (!idToken) return message.error("Not authenticated");
+    setStockOutProduct(p);
+    setOpenStockOut(true);
   }
 
   const columns = [
@@ -336,18 +435,27 @@ export default function AdminProductsPage() {
         </div>
       ),
     },
+    //  NEW Supplier column
+    {
+      title: "Supplier",
+      dataIndex: "supplier",
+      key: "supplier",
+      width: 180,
+      render: (v: any) =>
+        v ? String(v) : <span className="text-gray-400">—</span>,
+    },
     {
       title: "Qty",
       dataIndex: "quantity",
       key: "quantity",
-      width: 180,
+      width: 200,
       render: (v: any, r: Product) => (
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => changeQty(r, -1)}
+            onClick={() => openStockOutForProduct(r)}
             className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
-            aria-label="Decrease quantity"
+            aria-label="Stock-out"
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -358,9 +466,9 @@ export default function AdminProductsPage() {
 
           <button
             type="button"
-            onClick={() => changeQty(r, +1)}
+            onClick={() => openStockInForProduct(r)}
             className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
-            aria-label="Increase quantity"
+            aria-label="Stock-in"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -411,7 +519,6 @@ export default function AdminProductsPage() {
 
   return (
     <div className="p-4 lg:p-6">
-      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
         <div>
           <div className="text-lg font-bold text-gray-900">
@@ -432,12 +539,11 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
-      {/* Controls */}
       <div className="bg-white border border-black/10 rounded-2xl p-3 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search products..."
+          placeholder="Search products or supplier..."
           prefix={<SearchOutlined />}
           className="sm:max-w-sm"
           allowClear
@@ -456,7 +562,6 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Desktop Table */}
       <div className="hidden md:block">
         <Card className="rounded-2xl border-black/10">
           <Table
@@ -477,7 +582,6 @@ export default function AdminProductsPage() {
         </Card>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden grid grid-cols-1 gap-3">
         {loading ? (
           <Card className="rounded-2xl border-black/10">
@@ -523,13 +627,18 @@ export default function AdminProductsPage() {
               <div className="p-4">
                 <div className="font-semibold text-gray-900">{p.name}</div>
                 <div className="text-xs text-gray-500">{p.category}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Supplier:{" "}
+                  <span className="font-semibold">{p.supplier || "—"}</span>
+                </div>
 
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => changeQty(p, -1)}
+                      onClick={() => openStockOutForProduct(p)}
                       className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+                      aria-label="Stock-out"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
@@ -540,8 +649,9 @@ export default function AdminProductsPage() {
 
                     <button
                       type="button"
-                      onClick={() => changeQty(p, +1)}
+                      onClick={() => openStockInForProduct(p)}
                       className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+                      aria-label="Stock-in"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -574,7 +684,6 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      {/* Modal extracted */}
       <ProductUpsertModal
         open={openModal}
         saving={saving}
@@ -589,6 +698,25 @@ export default function AdminProductsPage() {
           resetForm();
         }}
         onSubmit={runCreateOrUpdate}
+      />
+
+      {/*  Separate Stock-Out modal */}
+      <StockOutModal
+        open={openStockOut}
+        idToken={idToken}
+        product={
+          stockOutProduct
+            ? {
+                id: stockOutProduct.id,
+                name: stockOutProduct.name,
+                quantity: stockOutProduct.quantity,
+              }
+            : null
+        }
+        onClose={() => {
+          setOpenStockOut(false);
+          setStockOutProduct(null);
+        }}
       />
     </div>
   );

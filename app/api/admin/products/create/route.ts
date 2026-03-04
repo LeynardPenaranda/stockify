@@ -1,8 +1,18 @@
+/* =========================
+    FIX #1 (SERVER): CREATE PRODUCT ROUTE
+   File: app/api/admin/products/create/route.ts
+   - Adds supplier to products + analytics_products
+   ========================= */
+
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/src/lib/firebase/admin";
-import { recalcDashboardAnalyticsTx } from "@/src/server/updateDashboardAnalytics";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const runtime = "nodejs";
+
+function dayKey(d: Date) {
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+}
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +20,7 @@ export async function POST(req: Request) {
     const idToken = authHeader?.startsWith("Bearer ")
       ? authHeader.slice(7)
       : null;
+
     if (!idToken)
       return NextResponse.json({ error: "Missing token" }, { status: 401 });
 
@@ -18,6 +29,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
+
     const name = String(body?.name || "").trim();
     const category = String(body?.category || "Uncategorized").trim();
     const quantity = Number(body?.quantity ?? 0);
@@ -25,6 +37,11 @@ export async function POST(req: Request) {
     const expirationDate = body?.expirationDate
       ? String(body.expirationDate)
       : null;
+
+    //  supplier normalized to null when empty
+    const supplier = body?.supplier ? String(body.supplier).trim() : "";
+    const supplierValue = supplier ? supplier : null;
+
     const imageUrl = body?.imageUrl ? String(body.imageUrl) : null;
     const imagePublicId = body?.imagePublicId
       ? String(body.imagePublicId)
@@ -33,41 +50,130 @@ export async function POST(req: Request) {
 
     if (!name)
       return NextResponse.json({ error: "Missing name" }, { status: 400 });
+
     if (!Number.isFinite(quantity) || quantity < 0)
       return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
+
     if (!Number.isFinite(minStock) || minStock < 0)
       return NextResponse.json({ error: "Invalid minStock" }, { status: 400 });
 
-    const ref = adminDb.collection("products").doc();
+    const now = new Date();
+    const day = dayKey(now);
+
+    const stockStatus =
+      quantity <= 0
+        ? "out_of_stock"
+        : quantity <= minStock
+          ? "low_stock"
+          : "ok";
+
+    const productRef = adminDb.collection("products").doc();
+    const productId = productRef.id;
+
+    const eventRef = adminDb.collection("analytics_events").doc();
+    const productAnalyticsRef = adminDb
+      .collection("analytics_products")
+      .doc(productId);
+
+    const globalDashRef = adminDb
+      .collection("dashboard_analytics")
+      .doc("global");
+
+    const dailyRef = adminDb.collection("analytics_daily").doc(day);
+
+    const stockInLogRef = adminDb.collection("stock_in_logs").doc();
 
     await adminDb.runTransaction(async (tx) => {
-      tx.set(ref, {
+      //  FIX: supplier saved in products
+      tx.set(productRef, {
         name,
         category,
         quantity,
         minStock,
         expirationDate,
+        supplier: supplierValue, //  ADDED
         imageUrl,
         imagePublicId,
         imageFolder,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
         createdBy: decoded.uid,
         updatedBy: decoded.uid,
       });
 
-      tx.create(adminDb.collection("analytics_events").doc(), {
+      tx.create(eventRef, {
         type: "product_create",
-        productId: ref.id,
+        productId,
         deltaQuantity: quantity,
-        at: new Date(),
+        at: now,
         by: decoded.uid,
       });
 
-      await recalcDashboardAnalyticsTx(tx);
+      //  FIX: supplier saved in analytics_products
+      tx.set(productAnalyticsRef, {
+        productId,
+        name,
+        category,
+        quantity,
+        minStock,
+        stockStatus,
+        expirationDate,
+        supplier: supplierValue, //  ADDED
+        imageUrl,
+        imagePublicId,
+        imageFolder,
+        createdAt: now,
+        updatedAt: now,
+        lastEventAt: now,
+        lastEventType: "product_create",
+        lastEventBy: decoded.uid,
+      });
+
+      tx.set(
+        globalDashRef,
+        {
+          totalProducts: FieldValue.increment(1),
+          totalStockQty: FieldValue.increment(quantity),
+          lowStockCount: FieldValue.increment(
+            stockStatus === "low_stock" ? 1 : 0,
+          ),
+          outOfStockCount: FieldValue.increment(
+            stockStatus === "out_of_stock" ? 1 : 0,
+          ),
+          updatedAt: now,
+          lastEventAt: now,
+          lastEventType: "product_create",
+          lastEventBy: decoded.uid,
+        },
+        { merge: true },
+      );
+
+      // Treat initial quantity as Stock-In + logs + analytics_daily
+      if (quantity > 0) {
+        tx.set(stockInLogRef, {
+          productId,
+          productName: name,
+          category,
+          quantity,
+          supplier: supplierValue, //  keep supplier in stock-in logs
+          at: now,
+          createdAt: now,
+          createdBy: decoded.uid,
+        });
+
+        tx.set(
+          dailyRef,
+          {
+            day,
+            stockInQty: FieldValue.increment(quantity),
+            updatedAt: now,
+          },
+          { merge: true },
+        );
+      }
     });
 
-    return NextResponse.json({ ok: true, id: ref.id });
+    return NextResponse.json({ ok: true, id: productId });
   } catch (e: any) {
     return NextResponse.json(
       { error: e?.message || "Create failed" },

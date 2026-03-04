@@ -27,58 +27,75 @@ export async function PATCH(
 
     const ref = adminDb.collection("products").doc(id);
 
+    // ✅ Read OUTSIDE tx if you need old image id for Cloudinary
+    const snapOutside = await ref.get();
+    if (!snapOutside.exists)
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+    const old = snapOutside.data() as any;
+
+    // image replacement fields
+    const newPublicId = body?.imagePublicId ? String(body.imagePublicId) : null;
+    const newUrl = body?.imageUrl ? String(body.imageUrl) : null;
+    const newFolder = body?.imageFolder ? String(body.imageFolder) : null;
+
+    const isReplacingImage = Boolean(newPublicId && newUrl);
+
+    // ✅ Delete old image OUTSIDE transaction (external side-effect)
+    if (
+      isReplacingImage &&
+      old?.imagePublicId &&
+      old.imagePublicId !== newPublicId
+    ) {
+      await cloudinary.uploader.destroy(old.imagePublicId);
+    }
+
+    const now = new Date();
+
     await adminDb.runTransaction(async (tx) => {
+      // ✅ READS FIRST
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Product not found");
-      const old = snap.data() as any;
 
-      const patch: any = { updatedAt: new Date(), updatedBy: decoded.uid };
+      // IMPORTANT: if this function reads anything, it must happen BEFORE writes
+      await recalcDashboardAnalyticsTx(tx);
+
+      // ✅ Prepare patch
+      const patch: any = { updatedAt: now, updatedBy: decoded.uid };
 
       if (body.name !== undefined) patch.name = String(body.name).trim();
       if (body.category !== undefined)
         patch.category = String(body.category).trim();
       if (body.quantity !== undefined) patch.quantity = Number(body.quantity);
       if (body.minStock !== undefined) patch.minStock = Number(body.minStock);
+
       if (body.expirationDate !== undefined)
         patch.expirationDate = body.expirationDate
           ? String(body.expirationDate)
           : null;
 
-      // image replacement fields (from client after uploading new image)
-      const newPublicId = body?.imagePublicId
-        ? String(body.imagePublicId)
-        : null;
-      const newUrl = body?.imageUrl ? String(body.imageUrl) : null;
-      const newFolder = body?.imageFolder ? String(body.imageFolder) : null;
-
-      const isReplacingImage = Boolean(newPublicId && newUrl);
-
-      // delete old image OUTSIDE tx? Cloudinary is external — do it before tx commit.
-      // We’ll do it right here, but ONLY if we are replacing and old exists.
-      if (
-        isReplacingImage &&
-        old?.imagePublicId &&
-        old.imagePublicId !== newPublicId
-      ) {
-        await cloudinary.uploader.destroy(old.imagePublicId);
+      // ✅ Supplier support
+      if (body.supplier !== undefined) {
+        const s = String(body.supplier ?? "").trim();
+        patch.supplier = s ? s : null;
       }
 
+      // ✅ Image patch
       if (isReplacingImage) {
         patch.imagePublicId = newPublicId;
         patch.imageUrl = newUrl;
         patch.imageFolder = newFolder ?? old?.imageFolder ?? null;
       }
 
+      // ✅ WRITES AFTER ALL READS
       tx.update(ref, patch);
 
       tx.create(adminDb.collection("analytics_events").doc(), {
         type: "product_update",
         productId: id,
-        at: new Date(),
+        at: now,
         by: decoded.uid,
       });
-
-      await recalcDashboardAnalyticsTx(tx);
     });
 
     return NextResponse.json({ ok: true });
@@ -110,28 +127,37 @@ export async function DELETE(
 
     const ref = adminDb.collection("products").doc(id);
 
+    // ✅ Read outside tx for Cloudinary (external)
+    const snapOutside = await ref.get();
+    if (!snapOutside.exists) return NextResponse.json({ ok: true });
+
+    const p = snapOutside.data() as any;
+
+    // delete image outside tx
+    if (p?.imagePublicId) {
+      await cloudinary.uploader.destroy(p.imagePublicId);
+    }
+
+    const now = new Date();
+
     await adminDb.runTransaction(async (tx) => {
+      // ✅ READS FIRST
       const snap = await tx.get(ref);
       if (!snap.exists) return;
 
-      const p = snap.data() as any;
+      // If recalc reads data, keep it before writes
+      await recalcDashboardAnalyticsTx(tx);
 
-      // delete image (external) — same caveat as above; acceptable for most admin apps
-      if (p?.imagePublicId) {
-        await cloudinary.uploader.destroy(p.imagePublicId);
-      }
-
+      // ✅ WRITES
       tx.delete(ref);
 
       tx.create(adminDb.collection("analytics_events").doc(), {
         type: "product_delete",
         productId: id,
         deltaQuantity: -Number(p?.quantity ?? 0),
-        at: new Date(),
+        at: now,
         by: decoded.uid,
       });
-
-      await recalcDashboardAnalyticsTx(tx);
     });
 
     return NextResponse.json({ ok: true });

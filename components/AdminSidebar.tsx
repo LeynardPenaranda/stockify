@@ -8,6 +8,8 @@ import {
   SquareArrowRightExit,
   LayoutDashboard,
   Boxes,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from "lucide-react";
 import { Drawer } from "antd";
 import { auth } from "@/src/lib/firebase/client";
@@ -16,7 +18,7 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ReactNode;
-  match?: "exact" | "prefix"; // ✅ control active matching
+  match?: "exact" | "prefix";
 };
 
 export default function AdminSidebar() {
@@ -34,23 +36,33 @@ export default function AdminSidebar() {
     {
       label: "Dashboard",
       href: "/admin",
-      match: "exact", // ✅ only active on /admin (NOT /admin/products)
+      match: "exact",
       icon: <LayoutDashboard className="w-4 h-4" />,
     },
     {
-      label: "Products Management",
+      label: "Products Inventory",
       href: "/admin/products",
-      match: "prefix", // ✅ active on /admin/products and /admin/products/...
+      match: "prefix",
       icon: <Boxes className="w-4 h-4" />,
+    },
+    {
+      label: "Stock In Monitoring",
+      href: "/admin/stock-in",
+      match: "prefix",
+      icon: <ArrowDownToLine className="w-4 h-4" />,
+    },
+    {
+      label: "Stock Out Monitoring",
+      href: "/admin/stock-out",
+      match: "prefix",
+      icon: <ArrowUpFromLine className="w-4 h-4" />,
     },
   ];
 
-  // Close drawer when route changes (mobile)
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // ✅ normalize paths: remove trailing slash except for root "/"
   function normalizePath(p: string) {
     if (!p) return "";
     if (p.length > 1 && p.endsWith("/")) return p.slice(0, -1);
@@ -61,18 +73,12 @@ export default function AdminSidebar() {
 
   function isActive(item: NavItem) {
     const href = normalizePath(item.href);
-
-    if (item.match === "exact") {
-      return current === href;
-    }
-
-    // prefix match (default): /admin/products matches /admin/products and /admin/products/123
+    if (item.match === "exact") return current === href;
     return current === href || current.startsWith(href + "/");
   }
 
   const SidebarContent = (
     <div className="h-full flex flex-col bg-white">
-      {/* Brand */}
       <div className="px-5 py-5 border-b border-black/10">
         <div className="flex items-center gap-3">
           <Image
@@ -90,7 +96,6 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="p-3 space-y-1">
         {navItems.map((item) => {
           const active = isActive(item);
@@ -119,10 +124,8 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Logout */}
       <div className="p-3 border-t border-black/10">
         <button
           onClick={onLogout}
@@ -141,7 +144,6 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* Mobile Top Button */}
       <div className="lg:hidden p-3 border-b border-black/10 flex items-center justify-between bg-white sticky top-0 z-30">
         <div className="font-semibold">Stockify Admin</div>
         <button
@@ -152,12 +154,10 @@ export default function AdminSidebar() {
         </button>
       </div>
 
-      {/* Desktop Sidebar */}
       <aside className="hidden lg:block sticky top-0 h-screen w-70 shrink-0 border-r border-black/10 bg-white">
         {SidebarContent}
       </aside>
 
-      {/* Drawer (Mobile/Tablet) */}
       <Drawer
         title={null}
         placement="left"

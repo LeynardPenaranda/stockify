@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import Image from "next/image";
 import { Input, Modal, Upload } from "antd";
 import type { UploadFile, UploadProps } from "antd";
@@ -13,6 +13,7 @@ type Product = {
   quantity: number;
   minStock: number;
   expirationDate: string | null;
+  supplier?: string | null; // ✅ optional on existing products
   imageUrl: string | null;
   imagePublicId: string | null;
   imageFolder: string | null;
@@ -23,26 +24,22 @@ function safeNum(v: any) {
   return Number.isFinite(x) ? x : 0;
 }
 
+type FormState = {
+  name: string;
+  category: string;
+  quantity: number;
+  minStock: number;
+  expirationDate: string; // "" or YYYY-MM-DD
+  supplier: string; // ✅ NEW
+};
+
 type Props = {
   open: boolean;
   saving?: boolean;
   editing: Product | null;
-  form: {
-    name: string;
-    category: string;
-    quantity: number;
-    minStock: number;
-    expirationDate: string; // "" or YYYY-MM-DD
-  };
-  setForm: React.Dispatch<
-    React.SetStateAction<{
-      name: string;
-      category: string;
-      quantity: number;
-      minStock: number;
-      expirationDate: string;
-    }>
-  >;
+
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
 
   fileList: UploadFile[];
   setFileList: React.Dispatch<React.SetStateAction<UploadFile[]>>;
@@ -91,6 +88,18 @@ export default function ProductUpsertModal({
             value={form.name}
             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
             placeholder="e.g. Milk"
+          />
+        </div>
+
+        {/* ✅ Supplier */}
+        <div>
+          <div className="text-xs text-gray-500 mb-1">Supplier</div>
+          <Input
+            value={form.supplier}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, supplier: e.target.value }))
+            }
+            placeholder="e.g. ABC Trading (optional)"
           />
         </div>
 
