@@ -13,7 +13,7 @@ type Product = {
   quantity: number;
   minStock: number;
   expirationDate: string | null;
-  supplier?: string | null; // ✅ optional on existing products
+  supplier?: string | null;
   imageUrl: string | null;
   imagePublicId: string | null;
   imageFolder: string | null;
@@ -30,7 +30,7 @@ type FormState = {
   quantity: number;
   minStock: number;
   expirationDate: string; // "" or YYYY-MM-DD
-  supplier: string; // ✅ NEW
+  supplier: string;
 };
 
 type Props = {
@@ -71,6 +71,10 @@ export default function ProductUpsertModal({
     [fileList, setFileList],
   );
 
+  // Force consistent black text + white bg for inputs (fix laptop/monitor differences)
+  const inputClass = "bg-white text-gray-900 placeholder:text-gray-400";
+  const dateInputClass = "bg-white text-gray-900 placeholder:text-gray-400";
+
   return (
     <Modal
       title={editing ? "Edit Product" : "Add Product"}
@@ -80,6 +84,14 @@ export default function ProductUpsertModal({
       okText={editing ? "Save Changes" : "Create"}
       confirmLoading={saving}
       destroyOnHidden
+      style={{ top: 16 }}
+      styles={{
+        body: {
+          maxHeight: "calc(92dvh - 120px)",
+          overflowY: "auto",
+          padding: 16,
+        },
+      }}
     >
       <div className="space-y-3">
         <div>
@@ -88,10 +100,10 @@ export default function ProductUpsertModal({
             value={form.name}
             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
             placeholder="e.g. Milk"
+            className={inputClass}
           />
         </div>
 
-        {/* ✅ Supplier */}
         <div>
           <div className="text-xs text-gray-500 mb-1">Supplier</div>
           <Input
@@ -100,6 +112,7 @@ export default function ProductUpsertModal({
               setForm((s) => ({ ...s, supplier: e.target.value }))
             }
             placeholder="e.g. ABC Trading (optional)"
+            className={inputClass}
           />
         </div>
 
@@ -112,6 +125,7 @@ export default function ProductUpsertModal({
                 setForm((s) => ({ ...s, category: e.target.value }))
               }
               placeholder="e.g. Dairy"
+              className={inputClass}
             />
           </div>
 
@@ -123,6 +137,7 @@ export default function ProductUpsertModal({
               onChange={(e) =>
                 setForm((s) => ({ ...s, expirationDate: e.target.value }))
               }
+              className={dateInputClass}
             />
           </div>
         </div>
@@ -137,6 +152,7 @@ export default function ProductUpsertModal({
               onChange={(e) =>
                 setForm((s) => ({ ...s, quantity: safeNum(e.target.value) }))
               }
+              className={inputClass}
             />
           </div>
 
@@ -151,6 +167,7 @@ export default function ProductUpsertModal({
               onChange={(e) =>
                 setForm((s) => ({ ...s, minStock: safeNum(e.target.value) }))
               }
+              className={inputClass}
             />
           </div>
         </div>

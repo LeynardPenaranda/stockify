@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     if (!Number.isFinite(qty) || qty <= 0)
       return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
 
-    // ✅ Identity: prefer client, fallback to Admin SDK
+    //  Identity: prefer client, fallback to Admin SDK
     let stockInByEmail = (
       body?.stockInByEmail ? String(body.stockInByEmail) : ""
     )
@@ -69,11 +69,17 @@ export async function POST(req: Request) {
     const logRef = adminDb.collection("stock_in_logs").doc();
     const dailyRef = adminDb.collection("analytics_daily").doc(day);
 
+    //  NEW: analytics_events ref
+    const eventRef = adminDb.collection("analytics_events").doc();
+
     await adminDb.runTransaction(async (tx) => {
       const snap = await tx.get(productRef);
       if (!snap.exists) throw new Error("Product not found");
 
       const p = snap.data() as any;
+      const productName = String(p.name ?? "");
+      const category = String(p.category ?? "Uncategorized");
+
       const currentQty = Number(p.quantity ?? 0);
       const minStock = Number(p.minStock ?? 0);
 
@@ -93,21 +99,19 @@ export async function POST(req: Request) {
         updatedBy: decoded.uid,
       });
 
-      // ✅ Write NEW fields + also keep old "createdBy" for backward compatibility
+      //  Write NEW fields + also keep old "createdBy" for backward compatibility
       tx.set(logRef, {
         productId,
-        productName: String(p.name ?? ""),
-        category: String(p.category ?? "Uncategorized"),
-        productImageUrl, // ✅ NEW
+        productName,
+        category,
+        productImageUrl,
         quantity: qty,
         supplier: supplier ? supplier : null,
 
-        // ✅ NEW naming for UI
         stockInByName,
         stockInByEmail,
         stockInByUid: decoded.uid,
 
-        // ✅ LEGACY (your logs currently use this)
         createdBy: decoded.uid,
 
         at: now,
@@ -128,8 +132,8 @@ export async function POST(req: Request) {
         adminDb.collection("analytics_products").doc(productId),
         {
           productId,
-          name: String(p.name ?? ""),
-          category: String(p.category ?? "Uncategorized"),
+          name: productName,
+          category,
           quantity: nextQty,
           minStock,
           stockStatus,
@@ -152,6 +156,21 @@ export async function POST(req: Request) {
         },
         { merge: true },
       );
+
+      //  NEW: analytics_events (for dashboard Recent Events)
+      tx.create(eventRef, {
+        type: "stock_in",
+        productId,
+        productName,
+        category,
+        deltaQuantity: qty, //  positive
+        at: now,
+        by: decoded.uid,
+
+        supplier: supplier ? supplier : null,
+        byName: stockInByName,
+        byEmail: stockInByEmail,
+      });
     });
 
     return NextResponse.json({ ok: true });

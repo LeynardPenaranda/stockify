@@ -1,7 +1,8 @@
 /* =========================
-    FIX #1 (SERVER): CREATE PRODUCT ROUTE
+    FIX: CREATE PRODUCT ROUTE
    File: app/api/admin/products/create/route.ts
    - Adds supplier to products + analytics_products
+   -  analytics_events now includes productName + deltaQuantity
    ========================= */
 
 import { NextResponse } from "next/server";
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
       ? String(body.expirationDate)
       : null;
 
-    //  supplier normalized to null when empty
+    // supplier normalized to null when empty
     const supplier = body?.supplier ? String(body.supplier).trim() : "";
     const supplierValue = supplier ? supplier : null;
 
@@ -80,18 +81,17 @@ export async function POST(req: Request) {
       .doc("global");
 
     const dailyRef = adminDb.collection("analytics_daily").doc(day);
-
     const stockInLogRef = adminDb.collection("stock_in_logs").doc();
 
     await adminDb.runTransaction(async (tx) => {
-      //  FIX: supplier saved in products
+      //  Products
       tx.set(productRef, {
         name,
         category,
         quantity,
         minStock,
         expirationDate,
-        supplier: supplierValue, //  ADDED
+        supplier: supplierValue,
         imageUrl,
         imagePublicId,
         imageFolder,
@@ -101,15 +101,18 @@ export async function POST(req: Request) {
         updatedBy: decoded.uid,
       });
 
+      //  Events (NOW HAS productName + deltaQuantity)
       tx.create(eventRef, {
         type: "product_create",
         productId,
-        deltaQuantity: quantity,
+        productName: name, //  ADDED
+        category, //  optional but useful
+        deltaQuantity: quantity, //  qty change / initial qty
         at: now,
         by: decoded.uid,
       });
 
-      //  FIX: supplier saved in analytics_products
+      //  analytics_products
       tx.set(productAnalyticsRef, {
         productId,
         name,
@@ -118,7 +121,7 @@ export async function POST(req: Request) {
         minStock,
         stockStatus,
         expirationDate,
-        supplier: supplierValue, //  ADDED
+        supplier: supplierValue,
         imageUrl,
         imagePublicId,
         imageFolder,
@@ -129,6 +132,7 @@ export async function POST(req: Request) {
         lastEventBy: decoded.uid,
       });
 
+      //  dashboard_analytics/global
       tx.set(
         globalDashRef,
         {
@@ -148,14 +152,14 @@ export async function POST(req: Request) {
         { merge: true },
       );
 
-      // Treat initial quantity as Stock-In + logs + analytics_daily
+      //  Treat initial qty as Stock-In + logs + analytics_daily
       if (quantity > 0) {
         tx.set(stockInLogRef, {
           productId,
           productName: name,
           category,
           quantity,
-          supplier: supplierValue, //  keep supplier in stock-in logs
+          supplier: supplierValue,
           at: now,
           createdAt: now,
           createdBy: decoded.uid,

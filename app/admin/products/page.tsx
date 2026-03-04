@@ -351,13 +351,13 @@ export default function AdminProductsPage() {
       async onOk() {
         try {
           if (p.imagePublicId) {
-            await fetch("/api/admin/cloudinary/delete", {
+            await fetch("/api/admin/products/delete", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 authorization: `Bearer ${idToken}`,
               },
-              body: JSON.stringify({ publicId: p.imagePublicId }),
+              body: JSON.stringify({ productId: p.id }),
             });
           }
 

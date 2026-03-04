@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     const idToken = authHeader?.startsWith("Bearer ")
       ? authHeader.slice(7)
       : null;
+
     if (!idToken)
       return NextResponse.json({ error: "Missing token" }, { status: 401 });
 
@@ -17,14 +18,10 @@ export async function POST(req: Request) {
     if (!decoded.admin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const { productId } = await req.json();
-    if (!productId)
-      return NextResponse.json({ error: "Missing productId" }, { status: 400 });
-
+    //  ignore productId completely
     const timestamp = Math.floor(Date.now() / 1000);
-    const folder = `stockify/products/${productId}`;
+    const folder = `stockify/products`;
 
-    // signature = sha1("folder=...&timestamp=...<api_secret>")
     const toSign = `folder=${folder}&timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`;
     const signature = crypto.createHash("sha1").update(toSign).digest("hex");
 

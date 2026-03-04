@@ -32,8 +32,11 @@ export default function StockOutModal({
 }: Props) {
   const [qty, setQty] = useState<number>(1);
   const [releasedTo, setReleasedTo] = useState("");
-  const [purpose, setPurpose] = useState(""); // ✅ NEW
+  const [purpose, setPurpose] = useState("");
   const [qtyExceeded, setQtyExceeded] = useState(false);
+
+  //  LOADING state
+  const [submitting, setSubmitting] = useState(false);
 
   // auto-filled performer info
   const [performedByName, setPerformedByName] = useState<string>("");
@@ -48,8 +51,9 @@ export default function StockOutModal({
     if (!open) return;
 
     setReleasedTo("");
-    setPurpose(""); // ✅ reset
+    setPurpose("");
     setQtyExceeded(false);
+    setSubmitting(false);
     warnedRef.current = false;
 
     if (maxQty <= 0) setQty(0);
@@ -89,6 +93,7 @@ export default function StockOutModal({
   }, [maxQty, open]);
 
   async function submit() {
+    if (submitting) return; //  prevent double submit
     if (!idToken) return message.error("Not authenticated");
     if (!product) return message.error("No product selected");
 
@@ -106,36 +111,45 @@ export default function StockOutModal({
 
     const finalQty = clamp(q, 1, maxQty);
 
-    // ✅ Purpose is required (you can make it optional by removing this block)
+    // Purpose required
     if (!purpose.trim()) {
       return message.error("Purpose is required.");
     }
 
-    const res = await fetch("/api/admin/stock-out/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({
-        productId: product.id,
-        quantity: finalQty,
-        releasedTo: releasedTo.trim() ? releasedTo.trim() : null,
-        purpose: purpose.trim(), // ✅ NEW
-        performedByName: performedByName || null,
-        performedByEmail: performedByEmail || null,
-      }),
-    });
+    try {
+      setSubmitting(true); //  start loader
 
-    const data = await res.json();
-    if (!res.ok) {
-      message.error(data?.error || "Stock-out failed");
-      return;
+      const res = await fetch("/api/admin/stock-out/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity: finalQty,
+          releasedTo: releasedTo.trim() ? releasedTo.trim() : null,
+          purpose: purpose.trim(),
+          //  IMPORTANT: your API expects stockOutByName / stockOutByEmail
+          stockOutByName: performedByName || null,
+          stockOutByEmail: performedByEmail || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        message.error(data?.error || "Stock-out failed");
+        return;
+      }
+
+      message.success("Stock-out recorded");
+      onClose();
+      onSuccess?.();
+    } catch (e: any) {
+      message.error(e?.message || "Stock-out failed");
+    } finally {
+      setSubmitting(false); //  stop loader
     }
-
-    message.success("Stock-out recorded");
-    onClose();
-    onSuccess?.();
   }
 
   const qtyHelp =
@@ -147,13 +161,25 @@ export default function StockOutModal({
     <Modal
       title={product ? `Stock-Out: ${product.name}` : "Stock-Out"}
       open={open}
-      onCancel={onClose}
+      onCancel={() => {
+        if (submitting) return; //  optional: block closing while saving
+        onClose();
+      }}
       onOk={submit}
-      okText="Record Stock-Out"
+      okText={submitting ? "Recording..." : "Record Stock-Out"}
       destroyOnHidden
+      confirmLoading={submitting} //  AntD built-in loader for OK button
       okButtonProps={{
         danger: true,
-        disabled: !product || maxQty <= 0 || qtyExceeded || !purpose.trim(), // ✅ disable if no purpose
+        disabled:
+          submitting ||
+          !product ||
+          maxQty <= 0 ||
+          qtyExceeded ||
+          !purpose.trim(),
+      }}
+      cancelButtonProps={{
+        disabled: submitting, //  prevent cancel while saving
       }}
     >
       <div className="space-y-4 pt-1">
@@ -179,6 +205,7 @@ export default function StockOutModal({
             max={maxQty || 0}
             value={qty}
             status={qtyExceeded ? "error" : ""}
+            disabled={maxQty <= 0 || submitting} //  disable while saving
             onChange={(e) => {
               const next = safeNum(e.target.value);
 
@@ -203,13 +230,11 @@ export default function StockOutModal({
             }}
             onBlur={() => {
               if (maxQty <= 0) return;
-              // clamp on blur so it becomes valid after warning
               setQty((prev) => clamp(safeNum(prev), 1, maxQty));
               setQtyExceeded(false);
               warnedRef.current = false;
             }}
             placeholder="Quantity"
-            disabled={maxQty <= 0}
           />
           {qtyHelp ? (
             <div className="mt-1 text-xs text-red-600">{qtyHelp}</div>
@@ -221,16 +246,17 @@ export default function StockOutModal({
             value={releasedTo}
             onChange={(e) => setReleasedTo(e.target.value)}
             placeholder="Released to (optional)"
+            disabled={submitting} //  disable while saving
           />
         </div>
 
-        {/* PURPOSE */}
         <div className="mt-2">
           <Input
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
             placeholder="Purpose (required) e.g., Sold, Donated, Issued, Damaged"
             status={!purpose.trim() ? "error" : ""}
+            disabled={submitting} //  disable while saving
           />
           {!purpose.trim() ? (
             <div className="mt-1 text-xs text-red-600">
@@ -238,6 +264,12 @@ export default function StockOutModal({
             </div>
           ) : null}
         </div>
+
+        {submitting ? (
+          <div className="rounded-xl border bg-sky-50 px-3 py-2 text-xs text-sky-700">
+            Recording stock-out… please wait.
+          </div>
+        ) : null}
       </div>
     </Modal>
   );

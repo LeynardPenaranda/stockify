@@ -77,11 +77,17 @@ export async function POST(req: Request) {
     const logRef = adminDb.collection("stock_out_logs").doc();
     const dailyRef = adminDb.collection("analytics_daily").doc(day);
 
+    //  NEW: analytics event ref
+    const eventRef = adminDb.collection("analytics_events").doc();
+
     await adminDb.runTransaction(async (tx) => {
       const snap = await tx.get(productRef);
       if (!snap.exists) throw new Error("Product not found");
 
       const p = snap.data() as any;
+      const productName = String(p.name ?? "");
+      const category = String(p.category ?? "Uncategorized");
+
       const currentQty = Number(p.quantity ?? 0);
       const minStock = Number(p.minStock ?? 0);
 
@@ -99,28 +105,28 @@ export async function POST(req: Request) {
 
       const productImageUrl = p.imageUrl ? String(p.imageUrl) : null;
 
+      //  update product qty
       tx.update(productRef, {
         quantity: nextQty,
         updatedAt: now,
         updatedBy: decoded.uid,
       });
 
-      //  store new clean fields + keep legacy creator fields for older UI
+      //  stock-out log
       tx.set(logRef, {
         productId,
-        productName: String(p.name ?? ""),
-        category: String(p.category ?? "Uncategorized"),
-        productImageUrl, //
+        productName,
+        category,
+        productImageUrl,
         quantity: qty,
         releasedTo: releasedTo ? releasedTo : null,
         purpose,
 
-        //  naming for UI
         stockOutByName,
         stockOutByEmail,
         stockOutByUid: decoded.uid,
 
-        //  LEGACY (if you still have older code reading these)
+        // LEGACY (if older UI still reads these)
         performedByName: stockOutByName,
         performedByEmail: stockOutByEmail,
         createdBy: decoded.uid,
@@ -129,18 +135,20 @@ export async function POST(req: Request) {
         createdAt: now,
       });
 
+      //  analytics_daily
       tx.set(
         dailyRef,
         { day, stockOutQty: FieldValue.increment(qty), updatedAt: now },
         { merge: true },
       );
 
+      //  analytics_products
       tx.set(
         adminDb.collection("analytics_products").doc(productId),
         {
           productId,
-          name: String(p.name ?? ""),
-          category: String(p.category ?? "Uncategorized"),
+          name: productName,
+          category,
           quantity: nextQty,
           minStock,
           stockStatus,
@@ -152,6 +160,7 @@ export async function POST(req: Request) {
         { merge: true },
       );
 
+      //  dashboard_analytics/global
       tx.set(
         adminDb.collection("dashboard_analytics").doc("global"),
         {
@@ -163,6 +172,23 @@ export async function POST(req: Request) {
         },
         { merge: true },
       );
+
+      //  NEW: analytics_events (so dashboard Recent Events can show productName + qty)
+      tx.create(eventRef, {
+        type: "stock_out",
+        productId,
+        productName, //  ADDED
+        category, // optional but useful
+        deltaQuantity: -qty, //  negative because stock decreased
+        at: now,
+        by: decoded.uid,
+
+        // optional context (nice for audit)
+        releasedTo: releasedTo ? releasedTo : null,
+        purpose,
+        byName: stockOutByName,
+        byEmail: stockOutByEmail,
+      });
     });
 
     return NextResponse.json({ ok: true });
