@@ -18,7 +18,8 @@ import { RefreshCw, ShieldPlus } from "lucide-react";
 import RegisterAdminModal, {
   AdminRole,
 } from "@/components/modals/RegisterModal";
-import AdminsTable, { AdminRow } from "@/components/tables/AdminsTable";
+import AdminsTable from "@/components/tables/AdminsTable";
+import { AdminRow } from "@/components/modals/ConfirmDeleteAdminModal";
 
 function tsToIso(ts: any): string | null {
   if (!ts) return null;
@@ -275,9 +276,6 @@ export default function AdminsPage() {
 
   async function onDeleteAdmin(admin: AdminRow) {
     try {
-      const ok = window.confirm(`Delete admin: ${admin.email || admin.uid}?`);
-      if (!ok) return;
-
       const current = auth.currentUser;
       if (!current) throw new Error("Not logged in");
       const token = await current.getIdToken(true);
@@ -305,6 +303,7 @@ export default function AdminsPage() {
         message: "Delete failed",
         description: e?.message ?? "Something went wrong",
       });
+      throw e; // optional: keeps modal open if delete fails
     }
   }
 
