@@ -6,9 +6,9 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 function initAdmin() {
   if (getApps().length) return;
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error("Missing Firebase Admin env vars");
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   try {
     initAdmin();
 
-    // ✅ verify requester
+    //  verify requester
     const token = getBearerToken(req);
     if (!token)
       return NextResponse.json({ error: "Missing token" }, { status: 401 });
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     if (!isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    // ✅ parse body
+    //  parse body
     const body = (await req.json()) as {
       email?: string;
       password?: string;
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     if (!password || password.length < 6)
       return NextResponse.json({ error: "weak-password" }, { status: 400 });
 
-    // ✅ only superadmin can create superadmin
+    //  only superadmin can create superadmin
     const requesterIsSuper = Boolean((decoded as any).superadmin);
     const requestedRole = (body.role ?? "admin") as "admin" | "superadmin";
     const role: "admin" | "superadmin" =
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         ? "superadmin"
         : "admin";
 
-    // ✅ create user in Firebase Auth
+    //  create user in Firebase Auth
     const user = await getAuth().createUser({
       email,
       password,
@@ -80,14 +80,14 @@ export async function POST(req: Request) {
       disabled: false,
     });
 
-    // ✅ set custom claims (important for your UI restrictions)
+    //  set custom claims (important for your UI restrictions)
     // You can use either {admin:true} or role-based. We'll set both:
     const claims: any = { admin: true };
     if (role === "superadmin") claims.superadmin = true;
 
     await getAuth().setCustomUserClaims(user.uid, claims);
 
-    // ✅ write admin profile in Firestore
+    //  write admin profile in Firestore
     const db = getFirestore();
 
     await db
