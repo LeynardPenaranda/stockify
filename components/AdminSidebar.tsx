@@ -10,6 +10,7 @@ import {
   Boxes,
   ArrowDownToLine,
   ArrowUpFromLine,
+  Users,
 } from "lucide-react";
 import { Drawer } from "antd";
 import { auth } from "@/src/lib/firebase/client";
@@ -57,6 +58,12 @@ export default function AdminSidebar() {
       match: "prefix",
       icon: <ArrowUpFromLine className="w-4 h-4" />,
     },
+    {
+      label: "Admin Management",
+      href: "/admin/register-admin",
+      match: "prefix",
+      icon: <Users className="w-4 h-4" />,
+    },
   ];
 
   useEffect(() => {
@@ -91,7 +98,7 @@ export default function AdminSidebar() {
           />
           <div className="leading-tight">
             <div className="text-sm font-bold text-gray-900">Stockify</div>
-            <div className="text-xs text-gray-500">Admin Panel</div>
+            <div className="text-xs text-gray-500">Inventory Panel</div>
           </div>
         </div>
       </div>

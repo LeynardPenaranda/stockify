@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./providers";
 import AuthRedirect from "@/components/AuthRedirect";
+import { ToastProvider } from "@/src/hooks/useToast";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -27,7 +28,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <AuthRedirect />
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </AuthProvider>
       </body>
     </html>

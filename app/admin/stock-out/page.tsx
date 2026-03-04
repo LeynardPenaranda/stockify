@@ -16,6 +16,7 @@ import {
 
 import { exportStockOutLogsCsv } from "@/src/reports/stockOutReport";
 import StockTrendAreaChart from "@/components/analytics/StockTrendAreaChart";
+import { ArrowDownToLine } from "lucide-react";
 
 type Product = {
   id: string;
@@ -321,8 +322,10 @@ export default function StockOutPage() {
               if (!idToken) return message.error("Not authenticated");
               exportStockOutLogsCsv(enrichedForExport);
             }}
+            className="flex items-center gap-2"
           >
-            Download CSV
+            <ArrowDownToLine size={15} />
+            <span className="hidden sm:inline">Stock Out Report</span>
           </Button>
         </div>
 

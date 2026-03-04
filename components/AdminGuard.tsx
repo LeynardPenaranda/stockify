@@ -1,7 +1,8 @@
 "use client";
 
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/src/lib/firebase/client";
+import { auth, db } from "@/src/lib/firebase/client";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -75,7 +76,9 @@ export default function AdminGuard({
       }
 
       const token = await user.getIdTokenResult(true);
-      const isAdmin = Boolean(token.claims.admin);
+
+      // ✅ accept either admin OR superadmin
+      const isAdmin = Boolean(token.claims.admin || token.claims.superadmin);
 
       setAllowed(isAdmin);
       setReady(true);
@@ -83,6 +86,19 @@ export default function AdminGuard({
       if (!isAdmin) {
         await auth.signOut();
         router.replace("/");
+        return;
+      }
+
+      // ✅ update last sign-in (Firestore)
+      try {
+        await setDoc(
+          doc(db, "admins", user.uid),
+          { lastSignIn: serverTimestamp() },
+          { merge: true },
+        );
+      } catch (err) {
+        // don't block login if this fails
+        console.error("Failed to update lastSignIn:", err);
       }
     });
 
