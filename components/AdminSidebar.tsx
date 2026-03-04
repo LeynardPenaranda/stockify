@@ -287,7 +287,7 @@ export default function AdminSidebar() {
         placement="right"
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
-        width={profileDrawerWidth}
+        size={profileDrawerWidth}
         destroyOnHidden
         styles={{ body: { padding: 0 } }}
       >
@@ -320,7 +320,7 @@ export default function AdminSidebar() {
         placement="left"
         open={open}
         onClose={() => setOpen(false)}
-        width={drawerWidth}
+        size={drawerWidth}
         destroyOnHidden
         styles={{ body: { padding: 0 } }}
       >
