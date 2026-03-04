@@ -23,8 +23,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  serverTimestamp,
-  updateDoc,
   deleteDoc,
 } from "firebase/firestore";
 import type { UploadFile } from "antd";
@@ -39,7 +37,7 @@ type Product = {
   quantity: number;
   minStock: number;
   expirationDate: string | null;
-  supplier?: string | null; //  NEW
+  supplier?: string | null;
   imageUrl: string | null;
   imagePublicId: string | null;
   imageFolder: string | null;
@@ -54,6 +52,28 @@ function safeNum(v: any) {
 
 function isLowStock(p: Product) {
   return safeNum(p.quantity) <= safeNum(p.minStock);
+}
+
+// ===== Expiry helpers (2 weeks) =====
+const EXPIRY_WARNING_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseExpiryMs(v: any): number | null {
+  if (!v) return null;
+  // If you ever store Timestamp later
+  if (typeof v?.toDate === "function") return v.toDate().getTime();
+
+  const d = new Date(String(v));
+  const t = d.getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+function expiryInfo(p: Product): { days: number | null; isSoon: boolean } {
+  const ms = parseExpiryMs(p.expirationDate);
+  if (!ms) return { days: null, isSoon: false };
+  const days = Math.ceil((ms - Date.now()) / DAY_MS);
+  const isSoon = days >= 0 && days <= EXPIRY_WARNING_DAYS;
+  return { days, isSoon };
 }
 
 export default function AdminProductsPage() {
@@ -75,13 +95,13 @@ export default function AdminProductsPage() {
     quantity: 0,
     minStock: 0,
     expirationDate: "" as string,
-    supplier: "" as string, //  NEW
+    supplier: "" as string,
   });
 
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [saving, setSaving] = useState(false);
 
-  //  NEW: separate StockOut modal state
+  // StockOut modal state
   const [openStockOut, setOpenStockOut] = useState(false);
   const [stockOutProduct, setStockOutProduct] = useState<Product | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -213,7 +233,7 @@ export default function AdminProductsPage() {
     if (quantity < 0 || minStock < 0)
       return message.error("Quantity and minimum stock must be 0 or higher");
 
-    const supplier = form.supplier.trim(); //  NEW
+    const supplier = form.supplier.trim();
 
     setSaving(true);
     try {
@@ -242,7 +262,6 @@ export default function AdminProductsPage() {
       }
 
       if (!editing?.id) {
-        //  CREATE via API (should create initial stock-in log too)
         const res = await fetch("/api/admin/products/create", {
           method: "POST",
           headers: {
@@ -267,13 +286,13 @@ export default function AdminProductsPage() {
       } else {
         const productId = editing.id;
 
-        let patch: any = {
+        const patch: any = {
           name,
           category: form.category || "Uncategorized",
           quantity,
           minStock,
           expirationDate: form.expirationDate ? form.expirationDate : null,
-          supplier: supplier ? supplier : null, //  supplier included
+          supplier: supplier ? supplier : null,
         };
 
         const file = fileList?.[0]?.originFileObj as File | undefined;
@@ -400,7 +419,6 @@ export default function AdminProductsPage() {
     });
   }
 
-  //  Stock-Out uses separate modal now
   function openStockOutForProduct(p: Product) {
     if (!idToken) return message.error("Not authenticated");
     setStockOutProduct(p);
@@ -435,7 +453,6 @@ export default function AdminProductsPage() {
         </div>
       ),
     },
-    //  NEW Supplier column
     {
       title: "Supplier",
       dataIndex: "supplier",
@@ -448,38 +465,49 @@ export default function AdminProductsPage() {
       title: "Qty",
       dataIndex: "quantity",
       key: "quantity",
-      width: 200,
-      render: (v: any, r: Product) => (
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => openStockOutForProduct(r)}
-            className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
-            aria-label="Stock-out"
-          >
-            <Minus className="w-4 h-4" />
-          </button>
+      width: 220,
+      render: (v: any, r: Product) => {
+        const { isSoon, days } = expiryInfo(r);
 
-          <div className="min-w-11 text-center font-semibold text-gray-900">
-            {safeNum(v)}
+        return (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => openStockOutForProduct(r)}
+              className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+              aria-label="Stock-out"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+
+            <div className="min-w-11 text-center font-semibold text-gray-900">
+              {safeNum(v)}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => openStockInForProduct(r)}
+              className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+              aria-label="Stock-in"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {isLowStock(r) ? (
+              <Tag color="red" className="m-0">
+                Low
+              </Tag>
+            ) : null}
+
+            {/* Optional: small expiry tag beside qty too */}
+            {!isLowStock(r) && isSoon ? (
+              <Tag color="gold" className="m-0">
+                Exp {typeof days === "number" ? `(${days}d)` : ""}
+              </Tag>
+            ) : null}
           </div>
-
-          <button
-            type="button"
-            onClick={() => openStockInForProduct(r)}
-            className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
-            aria-label="Stock-in"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-
-          {isLowStock(r) ? (
-            <Tag color="red" className="m-0">
-              Low
-            </Tag>
-          ) : null}
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Min",
@@ -492,15 +520,26 @@ export default function AdminProductsPage() {
       title: "Expiration",
       dataIndex: "expirationDate",
       key: "expirationDate",
-      width: 140,
-      render: (v: any) =>
-        v ? (
-          <span className="inline-flex items-center gap-1 text-gray-700">
-            <Calendar className="w-4 h-4" /> {String(v)}
+      width: 170,
+      render: (_: any, r: Product) => {
+        if (!r.expirationDate) return <span className="text-gray-400">—</span>;
+
+        const { isSoon, days } = expiryInfo(r);
+
+        return (
+          <span className="inline-flex items-center gap-2 text-gray-700">
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="w-4 h-4" /> {String(r.expirationDate)}
+            </span>
+
+            {isSoon ? (
+              <Tag color="gold" className="m-0">
+                Expiring {typeof days === "number" ? `(${days}d)` : ""}
+              </Tag>
+            ) : null}
           </span>
-        ) : (
-          <span className="text-gray-400">—</span>
-        ),
+        );
+      },
     },
     {
       title: "",
@@ -595,92 +634,109 @@ export default function AdminProductsPage() {
             />
           </Card>
         ) : (
-          filtered.map((p) => (
-            <Card
-              key={p.id}
-              className="rounded-2xl border-black/10 overflow-hidden p-0"
-            >
-              <div className="relative w-full h-56 bg-black/5">
-                {p.imageUrl ? (
-                  <Image
-                    src={p.imageUrl}
-                    alt={p.name}
-                    fill
-                    sizes="100vw"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full grid place-items-center text-black/30">
-                    <Boxes className="w-8 h-8" />
-                  </div>
-                )}
+          filtered.map((p) => {
+            const { isSoon, days } = expiryInfo(p);
 
-                {isLowStock(p) ? (
-                  <div className="absolute top-3 left-3">
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-600 text-white">
-                      Low Stock
-                    </span>
-                  </div>
-                ) : null}
-              </div>
+            return (
+              <Card
+                key={p.id}
+                className="rounded-2xl border-black/10 overflow-hidden p-0"
+              >
+                <div className="relative w-full h-56 bg-black/5">
+                  {p.imageUrl ? (
+                    <Image
+                      src={p.imageUrl}
+                      alt={p.name}
+                      fill
+                      sizes="100vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center text-black/30">
+                      <Boxes className="w-8 h-8" />
+                    </div>
+                  )}
 
-              <div className="p-4">
-                <div className="font-semibold text-gray-900">{p.name}</div>
-                <div className="text-xs text-gray-500">{p.category}</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Supplier:{" "}
-                  <span className="font-semibold">{p.supplier || "—"}</span>
+                  {/* Low Stock label (existing) */}
+                  {isLowStock(p) ? (
+                    <div className="absolute top-3 left-3">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-600 text-white">
+                        Low Stock
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {/* Expiring Soon label (NEW) — same style, yellow */}
+                  {isSoon ? (
+                    <div className="absolute top-3 right-3">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-500 text-white">
+                        Expiring Soon{" "}
+                        {typeof days === "number" ? `• ${days}d` : ""}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openStockOutForProduct(p)}
-                      className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
-                      aria-label="Stock-out"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
+                <div className="p-4">
+                  <div className="font-semibold text-gray-900">{p.name}</div>
+                  <div className="text-xs text-gray-500">{p.category}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Supplier:{" "}
+                    <span className="font-semibold">{p.supplier || "—"}</span>
+                  </div>
 
-                    <div className="min-w-12 text-center font-bold text-gray-900">
-                      {p.quantity}
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openStockOutForProduct(p)}
+                        className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+                        aria-label="Stock-out"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+
+                      <div className="min-w-12 text-center font-bold text-gray-900">
+                        {p.quantity}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => openStockInForProduct(p)}
+                        className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+                        aria-label="Stock-in"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => openStockInForProduct(p)}
-                      className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
-                      aria-label="Stock-in"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    <div className="text-xs text-gray-500 text-right">
+                      Min: <span className="font-semibold">{p.minStock}</span>
+                      {p.expirationDate ? (
+                        <div className="mt-0.5">
+                          Exp:{" "}
+                          <span
+                            className={`font-semibold ${isSoon ? "text-yellow-700" : ""}`}
+                          >
+                            {p.expirationDate}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
 
-                  <div className="text-xs text-gray-500 text-right">
-                    Min: <span className="font-semibold">{p.minStock}</span>
-                    {p.expirationDate ? (
-                      <div className="mt-0.5">
-                        Exp:{" "}
-                        <span className="font-semibold">
-                          {p.expirationDate}
-                        </span>
-                      </div>
-                    ) : null}
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button size="small" onClick={() => openEdit(p)}>
+                      Edit
+                    </Button>
+                    <Button size="small" danger onClick={() => onDelete(p)}>
+                      Delete
+                    </Button>
                   </div>
                 </div>
-
-                <div className="mt-4 flex items-center justify-end gap-2">
-                  <Button size="small" onClick={() => openEdit(p)}>
-                    Edit
-                  </Button>
-                  <Button size="small" danger onClick={() => onDelete(p)}>
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))
+              </Card>
+            );
+          })
         )}
       </div>
 
@@ -700,7 +756,6 @@ export default function AdminProductsPage() {
         onSubmit={runCreateOrUpdate}
       />
 
-      {/*  Separate Stock-Out modal */}
       <StockOutModal
         open={openStockOut}
         idToken={idToken}

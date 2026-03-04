@@ -77,7 +77,7 @@ export default function AdminGuard({
 
       const token = await user.getIdTokenResult(true);
 
-      // ✅ accept either admin OR superadmin
+      //  accept either admin OR superadmin
       const isAdmin = Boolean(token.claims.admin || token.claims.superadmin);
 
       setAllowed(isAdmin);
@@ -89,7 +89,7 @@ export default function AdminGuard({
         return;
       }
 
-      // ✅ update last sign-in (Firestore)
+      //  update last sign-in (Firestore)
       try {
         await setDoc(
           doc(db, "admins", user.uid),
