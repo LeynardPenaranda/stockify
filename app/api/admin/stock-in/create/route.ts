@@ -9,7 +9,6 @@ type Body = {
   quantity: number;
   supplier?: string | null;
 
-  // optional from client
   stockInByName?: string | null;
   stockInByEmail?: string | null;
 };
@@ -44,7 +43,6 @@ export async function POST(req: Request) {
     if (!Number.isFinite(qty) || qty <= 0)
       return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
 
-    //  Identity: prefer client, fallback to Admin SDK
     let stockInByEmail = (
       body?.stockInByEmail ? String(body.stockInByEmail) : ""
     )
@@ -68,8 +66,6 @@ export async function POST(req: Request) {
     const productRef = adminDb.collection("products").doc(productId);
     const logRef = adminDb.collection("stock_in_logs").doc();
     const dailyRef = adminDb.collection("analytics_daily").doc(day);
-
-    //  NEW: analytics_events ref
     const eventRef = adminDb.collection("analytics_events").doc();
 
     await adminDb.runTransaction(async (tx) => {
@@ -99,7 +95,6 @@ export async function POST(req: Request) {
         updatedBy: decoded.uid,
       });
 
-      //  Write NEW fields + also keep old "createdBy" for backward compatibility
       tx.set(logRef, {
         productId,
         productName,
@@ -157,19 +152,18 @@ export async function POST(req: Request) {
         { merge: true },
       );
 
-      //  NEW: analytics_events (for dashboard Recent Events)
       tx.create(eventRef, {
         type: "stock_in",
         productId,
         productName,
         category,
-        deltaQuantity: qty, //  positive
+        deltaQuantity: qty, // positive
         at: now,
         by: decoded.uid,
 
         supplier: supplier ? supplier : null,
         byName: stockInByName,
-        byEmail: stockInByEmail,
+        byEmail: stockInByEmail, // added email of the user who stocked in
       });
     });
 

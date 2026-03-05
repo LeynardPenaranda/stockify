@@ -12,6 +12,7 @@ type Product = {
   category: string;
   quantity: number;
   minStock: number;
+  maxStock: number; // Add maxStock here
   expirationDate: string | null;
   supplier?: string | null;
   imageUrl: string | null;
@@ -29,6 +30,7 @@ type FormState = {
   category: string;
   quantity: number;
   minStock: number;
+  maxStock: number; // Add maxStock here
   expirationDate: string; // "" or YYYY-MM-DD
   supplier: string;
 };
@@ -166,6 +168,20 @@ export default function ProductUpsertModal({
               value={form.minStock}
               onChange={(e) =>
                 setForm((s) => ({ ...s, minStock: safeNum(e.target.value) }))
+              }
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Max Stock Level</div>
+            <Input
+              type="number"
+              min={0}
+              value={form.maxStock} // Add maxStock here
+              onChange={
+                (e) =>
+                  setForm((s) => ({ ...s, maxStock: safeNum(e.target.value) })) // Set maxStock
               }
               className={inputClass}
             />

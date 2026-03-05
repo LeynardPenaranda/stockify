@@ -27,7 +27,7 @@ export async function PATCH(
 
     const ref = adminDb.collection("products").doc(id);
 
-    // ✅ Read OUTSIDE tx if you need old image id for Cloudinary
+    // Read OUTSIDE tx if you need old image id for Cloudinary
     const snapOutside = await ref.get();
     if (!snapOutside.exists)
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -41,7 +41,7 @@ export async function PATCH(
 
     const isReplacingImage = Boolean(newPublicId && newUrl);
 
-    // ✅ Delete old image OUTSIDE transaction (external side-effect)
+    // Delete old image OUTSIDE transaction (external side-effect)
     if (
       isReplacingImage &&
       old?.imagePublicId &&
@@ -53,14 +53,14 @@ export async function PATCH(
     const now = new Date();
 
     await adminDb.runTransaction(async (tx) => {
-      // ✅ READS FIRST
+      // READS FIRST
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Product not found");
 
       // IMPORTANT: if this function reads anything, it must happen BEFORE writes
       await recalcDashboardAnalyticsTx(tx);
 
-      // ✅ Prepare patch
+      // Prepare patch
       const patch: any = { updatedAt: now, updatedBy: decoded.uid };
 
       if (body.name !== undefined) patch.name = String(body.name).trim();
@@ -74,27 +74,29 @@ export async function PATCH(
           ? String(body.expirationDate)
           : null;
 
-      // ✅ Supplier support
+      // Supplier support
       if (body.supplier !== undefined) {
         const s = String(body.supplier ?? "").trim();
         patch.supplier = s ? s : null;
       }
 
-      // ✅ Image patch
+      // Image patch
       if (isReplacingImage) {
         patch.imagePublicId = newPublicId;
         patch.imageUrl = newUrl;
         patch.imageFolder = newFolder ?? old?.imageFolder ?? null;
       }
 
-      // ✅ WRITES AFTER ALL READS
+      // WRITES AFTER ALL READS
       tx.update(ref, patch);
 
       tx.create(adminDb.collection("analytics_events").doc(), {
         type: "product_update",
         productId: id,
+        productName: body.name || old?.name, // Added product name in event
         at: now,
         by: decoded.uid,
+        byEmail: decoded.email, // Added email of the user who updated the product
       });
     });
 
@@ -127,7 +129,7 @@ export async function DELETE(
 
     const ref = adminDb.collection("products").doc(id);
 
-    // ✅ Read outside tx for Cloudinary (external)
+    // Read outside tx for Cloudinary (external)
     const snapOutside = await ref.get();
     if (!snapOutside.exists) return NextResponse.json({ ok: true });
 
@@ -141,22 +143,24 @@ export async function DELETE(
     const now = new Date();
 
     await adminDb.runTransaction(async (tx) => {
-      // ✅ READS FIRST
+      // READS FIRST
       const snap = await tx.get(ref);
       if (!snap.exists) return;
 
       // If recalc reads data, keep it before writes
       await recalcDashboardAnalyticsTx(tx);
 
-      // ✅ WRITES
+      // WRITES
       tx.delete(ref);
 
       tx.create(adminDb.collection("analytics_events").doc(), {
         type: "product_delete",
         productId: id,
+        productName: p?.name || "Unknown Product", // Added product name in event
         deltaQuantity: -Number(p?.quantity ?? 0),
         at: now,
         by: decoded.uid,
+        byEmail: decoded.email, // Added email of the user who deleted the product
       });
     });
 

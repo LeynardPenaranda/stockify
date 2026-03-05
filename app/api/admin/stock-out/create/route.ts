@@ -10,7 +10,6 @@ type Body = {
   releasedTo?: string | null;
   purpose?: string | null;
 
-  // optional from client
   stockOutByName?: string | null;
   stockOutByEmail?: string | null;
 };
@@ -52,7 +51,7 @@ export async function POST(req: Request) {
         { status: 400 },
       );
 
-    //  Identity: prefer client, fallback to Admin SDK
+    // Identity: prefer client, fallback to Admin SDK
     let stockOutByEmail = (
       body?.stockOutByEmail ? String(body.stockOutByEmail) : ""
     )
@@ -77,7 +76,7 @@ export async function POST(req: Request) {
     const logRef = adminDb.collection("stock_out_logs").doc();
     const dailyRef = adminDb.collection("analytics_daily").doc(day);
 
-    //  NEW: analytics event ref
+    // NEW: analytics event ref
     const eventRef = adminDb.collection("analytics_events").doc();
 
     await adminDb.runTransaction(async (tx) => {
@@ -105,14 +104,14 @@ export async function POST(req: Request) {
 
       const productImageUrl = p.imageUrl ? String(p.imageUrl) : null;
 
-      //  update product qty
+      // update product qty
       tx.update(productRef, {
         quantity: nextQty,
         updatedAt: now,
         updatedBy: decoded.uid,
       });
 
-      //  stock-out log
+      // stock-out log
       tx.set(logRef, {
         productId,
         productName,
@@ -135,14 +134,14 @@ export async function POST(req: Request) {
         createdAt: now,
       });
 
-      //  analytics_daily
+      // analytics_daily
       tx.set(
         dailyRef,
         { day, stockOutQty: FieldValue.increment(qty), updatedAt: now },
         { merge: true },
       );
 
-      //  analytics_products
+      // analytics_products
       tx.set(
         adminDb.collection("analytics_products").doc(productId),
         {
@@ -160,7 +159,7 @@ export async function POST(req: Request) {
         { merge: true },
       );
 
-      //  dashboard_analytics/global
+      // dashboard_analytics/global
       tx.set(
         adminDb.collection("dashboard_analytics").doc("global"),
         {
@@ -173,13 +172,13 @@ export async function POST(req: Request) {
         { merge: true },
       );
 
-      //  NEW: analytics_events (so dashboard Recent Events can show productName + qty)
+      // NEW: analytics_events (so dashboard Recent Events can show productName + qty)
       tx.create(eventRef, {
         type: "stock_out",
         productId,
-        productName, //  ADDED
+        productName, // ADDED
         category, // optional but useful
-        deltaQuantity: -qty, //  negative because stock decreased
+        deltaQuantity: -qty, // negative because stock decreased
         at: now,
         by: decoded.uid,
 
@@ -187,7 +186,7 @@ export async function POST(req: Request) {
         releasedTo: releasedTo ? releasedTo : null,
         purpose,
         byName: stockOutByName,
-        byEmail: stockOutByEmail,
+        byEmail: stockOutByEmail, // added email of the user who stocked out
       });
     });
 

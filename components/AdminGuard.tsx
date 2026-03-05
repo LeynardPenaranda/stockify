@@ -12,7 +12,6 @@ function FullPageLoader() {
     <div className="fixed inset-0 flex items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm rounded-2xl border border-black/10 bg-white shadow-xl">
         <div className="p-6">
-          {/* Header */}
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 overflow-hidden rounded-xl border border-black/10 grid place-items-center">
               <Image
@@ -34,7 +33,6 @@ function FullPageLoader() {
             </div>
           </div>
 
-          {/* Spinner + Progress */}
           <div className="mt-6 flex items-center gap-4">
             <div className="h-9 w-9 rounded-full border-4 border-black/10 border-t-primary animate-spin" />
             <div className="flex-1">
@@ -48,7 +46,6 @@ function FullPageLoader() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-black/10 px-6 py-4">
           <div className="text-[11px] text-gray-400">Stockify Admin System</div>
         </div>
@@ -66,6 +63,43 @@ export default function AdminGuard({
   const [ready, setReady] = useState(false);
   const [allowed, setAllowed] = useState(false);
 
+  async function sendLoginEmailAlert(user: any) {
+    try {
+      const bearer = await user.getIdToken(); // Firebase ID token
+
+      const actorName =
+        user.displayName ||
+        (typeof user.email === "string" ? user.email.split("@")[0] : "Admin");
+
+      const actorEmail = user.email ?? "Unknown email";
+
+      await fetch("/api/alerts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${bearer}`,
+        },
+        body: JSON.stringify({
+          type: "login",
+
+          // IMPORTANT: add title so your email template won't show "undefined"
+          title: "Admin Login Alert",
+
+          // dedupe per minute per user (prevents multiple sends)
+          dedupeKey: `${user.uid}:${new Date().toISOString().slice(0, 16)}`,
+
+          actorName,
+          actorEmail,
+
+          // nicer message content
+          message: `An admin signed in to Stockify.\n\nName: ${actorName}\nEmail: ${actorEmail}`,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to send login email alert:", err);
+    }
+  }
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -76,8 +110,6 @@ export default function AdminGuard({
       }
 
       const token = await user.getIdTokenResult(true);
-
-      //  accept either admin OR superadmin
       const isAdmin = Boolean(token.claims.admin || token.claims.superadmin);
 
       setAllowed(isAdmin);
@@ -89,7 +121,7 @@ export default function AdminGuard({
         return;
       }
 
-      //  update last sign-in (Firestore)
+      // update last sign-in (Firestore)
       try {
         await setDoc(
           doc(db, "admins", user.uid),
@@ -97,9 +129,11 @@ export default function AdminGuard({
           { merge: true },
         );
       } catch (err) {
-        // don't block login if this fails
         console.error("Failed to update lastSignIn:", err);
       }
+
+      // TRIGGER: email owner on admin login
+      await sendLoginEmailAlert(user);
     });
 
     return () => unsub();

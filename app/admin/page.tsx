@@ -25,6 +25,9 @@ import {
   Ban,
   Clock,
 } from "lucide-react";
+import { auth } from "@/src/lib/firebase/client";
+import { useToast } from "@/src/hooks/useToast";
+import { onAuthStateChanged } from "firebase/auth";
 
 type ApiOk<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -192,38 +195,6 @@ function SkeletonCard() {
   );
 }
 
-/** Legend: compact => dots only; larger => dot + label */
-function CompactLegend({
-  payload,
-  compact,
-}: {
-  payload?: ReadonlyArray<LegendPayload>;
-  compact: boolean;
-}) {
-  if (!payload?.length) return null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {payload.map((entry) => {
-        const color = (entry as any)?.color ?? "#999";
-        const label = String((entry as any)?.value ?? "");
-
-        return (
-          <div key={label} className="flex items-center gap-1" title={label}>
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full"
-              style={{ background: color }}
-            />
-            {!compact ? (
-              <span className="text-[11px] text-slate-600">{label}</span>
-            ) : null}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ---------------- Events helpers ----------------
 function eventMeta(type: string) {
   const t = String(type || "");
@@ -265,15 +236,87 @@ function eventMeta(type: string) {
   };
 }
 
+// CompactLegend Component Definition
+function CompactLegend({
+  payload,
+  compact,
+}: {
+  payload?: ReadonlyArray<LegendPayload>;
+  compact: boolean;
+}) {
+  if (!payload?.length) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {payload.map((entry) => {
+        const color = (entry as any)?.color ?? "#999";
+        const label = String((entry as any)?.value ?? "");
+
+        return (
+          <div key={label} className="flex items-center gap-1" title={label}>
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full"
+              style={{ background: color }}
+            />
+            {!compact ? (
+              <span className="text-[11px] text-slate-600">{label}</span>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [global, setGlobal] = useState<any>(null);
   const [daily, setDaily] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-
+  const { showToast } = useToast();
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const { ref: containerRef, w } = useContainerWidth<HTMLDivElement>();
   const compact = w > 0 && w < 448;
+  const [deletingAllEvents, setDeletingAllEvents] = useState(false);
+
+  async function onDeleteAllEvents() {
+    if (!isSuperAdmin) return;
+
+    const ok = window.confirm("Delete ALL events?\n\nThis cannot be undone.");
+    if (!ok) return;
+
+    try {
+      setDeletingAllEvents(true);
+
+      const current = auth.currentUser;
+      if (!current) throw new Error("Not logged in");
+
+      const token = await current.getIdToken(true);
+
+      const res = await fetch("/api/admin/delete-all-events", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Failed to delete events");
+
+      showToast({
+        type: "success",
+        message: "Events deleted",
+        description: `Deleted ${data.deleted ?? 0} event(s).`,
+      });
+    } catch (e: any) {
+      showToast({
+        type: "danger",
+        message: "Delete failed",
+        description: e?.message ?? "Something went wrong",
+      });
+    } finally {
+      setDeletingAllEvents(false);
+    }
+  }
 
   // get Firebase ID token (for admin API routes)
   async function getIdToken() {
@@ -323,16 +366,33 @@ export default function AdminPage() {
     loadAll();
   }, []);
 
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsSuperAdmin(false);
+        return;
+      }
+
+      const token = await user.getIdTokenResult(true);
+      setIsSuperAdmin(Boolean(token?.claims?.superadmin));
+    });
+
+    return () => unsub();
+  }, []);
   // DAILY CHART (used for totals + graph)
   const dailyChart = useMemo(() => {
-    return daily.map((x: any) => ({
-      date: x.day ?? x.id ?? x.date ?? "",
-      stockInQty: safeNum(x.stockInQty),
-      stockOutQty: safeNum(x.stockOutQty),
-    }));
+    return daily
+      .filter((x: any) => {
+        const today = new Date().setHours(0, 0, 0, 0);
+        const date = tsToMs(x.day ?? x.date);
+        return date && new Date(date).setHours(0, 0, 0, 0) === today;
+      })
+      .map((x: any) => ({
+        date: x.day ?? x.id ?? x.date ?? "",
+        stockInQty: safeNum(x.stockInQty),
+        stockOutQty: safeNum(x.stockOutQty),
+      }));
   }, [daily]);
-
-  // ✅ NEW: totals that will "sync" with your chart/daily analytics
   const periodTotals = useMemo(() => {
     let stockInTotal = 0;
     let stockOutTotal = 0;
@@ -349,27 +409,7 @@ export default function AdminPage() {
     };
   }, [dailyChart]);
 
-  // TOP CARDS
-  const topCards = useMemo(() => {
-    const g = global || {};
-    const totalProducts = safeNum(g.totalProducts);
-    const totalStockQty = safeNum(g.totalStockQty);
-
-    return {
-      totalProducts,
-      totalStockQty,
-
-      // ✅ replaced old low/out-of-stock counts with totals
-      stockInTotal: periodTotals.stockInTotal,
-      stockOutTotal: periodTotals.stockOutTotal,
-      netTotal: periodTotals.netTotal,
-
-      lastEventAt: g.lastEventAt,
-      lastEventType: g.lastEventType ?? "—",
-    };
-  }, [global, periodTotals]);
-
-  // Inventory trend (estimated) anchored to global.totalStockQty
+  // Inventory Trend: based on stockInQty and stockOutQty
   const inventoryTrend = useMemo(() => {
     const endQty = safeNum(global?.totalStockQty);
     const rows = [...dailyChart];
@@ -390,7 +430,27 @@ export default function AdminPage() {
     }));
   }, [dailyChart, global?.totalStockQty]);
 
-  // Events list mapping
+  // TOP CARDS
+  const topCards = useMemo(() => {
+    const g = global || {};
+    const totalProducts = safeNum(g.totalProducts);
+    const totalStockQty = safeNum(g.totalStockQty);
+
+    return {
+      totalProducts,
+      totalStockQty,
+
+      stockInTotal: periodTotals.stockInTotal,
+      stockOutTotal: periodTotals.stockOutTotal,
+      netTotal: periodTotals.netTotal,
+
+      lastEventAt: g.lastEventAt,
+      lastEventType: g.lastEventType ?? "—",
+    };
+  }, [global, periodTotals]);
+
+  // Map events to eventRows
+  // Modify the eventRows to include 'byEmail'
   const eventRows = useMemo(() => {
     return events.map((e: any, idx: number) => {
       const type = String(e.type ?? "");
@@ -416,6 +476,7 @@ export default function AdminPage() {
             : safeNum(e.deltaQuantity),
 
         by: e.by ? String(e.by) : null,
+        byEmail: e.by ? e.byEmail || "Unknown" : "Unknown",
       };
     });
   }, [events]);
@@ -491,20 +552,18 @@ export default function AdminPage() {
                 tone="primary"
               />
 
-              {/* ✅ CHANGED: Low Stock -> Stock In Total */}
               <StatCard
                 label="Stock In Total"
                 value={topCards.stockInTotal}
-                sub="Total received (last 30 days)"
+                sub="Total received today"
                 icon={<PlusCircle size={20} />}
                 tone="primary"
               />
 
-              {/* ✅ CHANGED: Out of Stock -> Stock Out Total */}
               <StatCard
                 label="Stock Out Total"
                 value={topCards.stockOutTotal}
-                sub="Total released (last 30 days)"
+                sub="Total released today"
                 icon={<MinusCircle size={20} />}
                 tone="warn"
               />
@@ -535,7 +594,7 @@ export default function AdminPage() {
             right="Estimated (last 30 days)"
             className="lg:col-span-3"
           >
-            <div className="h-[280px] w-full">
+            <div className=" h-70 w-full">
               <ResponsiveContainer>
                 <LineChart
                   data={inventoryTrend}
@@ -577,10 +636,10 @@ export default function AdminPage() {
 
           <CardShell
             title="Stock In vs Stock Out"
-            right="Daily (last 30 days)"
+            right="Daily (today)"
             className="lg:col-span-2"
           >
-            <div className="h-[280px] w-full">
+            <div className="h-70 w-full">
               <ResponsiveContainer>
                 <AreaChart
                   data={dailyChart}
@@ -637,10 +696,27 @@ export default function AdminPage() {
 
           <CardShell
             title="Recent Inventory Events"
-            right="From analytics_events"
+            right={
+              <div className="flex items-center gap-2">
+                <span>From analytics_events</span>
+
+                {isSuperAdmin ? (
+                  <button
+                    type="button"
+                    onClick={onDeleteAllEvents}
+                    disabled={deletingAllEvents}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Super admin only"
+                  >
+                    <Trash2 size={14} />
+                    {deletingAllEvents ? "Deleting..." : "Delete all"}
+                  </button>
+                ) : null}
+              </div>
+            }
             className="lg:col-span-1"
           >
-            <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
+            <div className="max-h-70 space-y-2 overflow-y-auto pr-1">
               {loading ? (
                 <div className="rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   Loading events…
@@ -681,6 +757,16 @@ export default function AdminPage() {
                                 ? `+${ev.deltaQuantity}`
                                 : ev.deltaQuantity}
                             </span>
+                          </div>
+                        ) : null}
+
+                        {/* Email of the user who performed the action */}
+                        {ev.byEmail ? (
+                          <div className="mt-1 text-[11px] text-slate-500">
+                            <span className="font-semibold text-slate-700">
+                              Performed By:
+                            </span>{" "}
+                            {ev.byEmail}
                           </div>
                         ) : null}
                       </div>

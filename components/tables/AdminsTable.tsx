@@ -27,6 +27,7 @@ function formatDate(iso: string | null) {
 
 function RolePill({ role }: { role: AdminRole }) {
   const isSuper = role === "superadmin";
+
   return (
     <span
       className={[
@@ -41,7 +42,8 @@ function RolePill({ role }: { role: AdminRole }) {
       ) : (
         <Shield className="h-3.5 w-3.5" />
       )}
-      {isSuper ? "Super Admin" : "Admin"}
+
+      {isSuper ? "Owner" : "Admin"}
     </span>
   );
 }

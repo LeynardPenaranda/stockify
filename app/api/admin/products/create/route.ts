@@ -1,10 +1,3 @@
-/* =========================
-    FIX: CREATE PRODUCT ROUTE
-   File: app/api/admin/products/create/route.ts
-   - Adds supplier to products + analytics_products
-   -  analytics_events now includes productName + deltaQuantity
-   ========================= */
-
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/src/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -35,11 +28,11 @@ export async function POST(req: Request) {
     const category = String(body?.category || "Uncategorized").trim();
     const quantity = Number(body?.quantity ?? 0);
     const minStock = Number(body?.minStock ?? 0);
+    const maxStock = Number(body?.maxStock ?? 0); // Add maxStock here
     const expirationDate = body?.expirationDate
       ? String(body.expirationDate)
       : null;
 
-    // supplier normalized to null when empty
     const supplier = body?.supplier ? String(body.supplier).trim() : "";
     const supplierValue = supplier ? supplier : null;
 
@@ -57,6 +50,9 @@ export async function POST(req: Request) {
 
     if (!Number.isFinite(minStock) || minStock < 0)
       return NextResponse.json({ error: "Invalid minStock" }, { status: 400 });
+
+    if (!Number.isFinite(maxStock) || maxStock < 0)
+      return NextResponse.json({ error: "Invalid maxStock" }, { status: 400 });
 
     const now = new Date();
     const day = dayKey(now);
@@ -84,12 +80,12 @@ export async function POST(req: Request) {
     const stockInLogRef = adminDb.collection("stock_in_logs").doc();
 
     await adminDb.runTransaction(async (tx) => {
-      //  Products
       tx.set(productRef, {
         name,
         category,
         quantity,
         minStock,
+        maxStock, // Add maxStock to product
         expirationDate,
         supplier: supplierValue,
         imageUrl,
@@ -99,26 +95,27 @@ export async function POST(req: Request) {
         updatedAt: now,
         createdBy: decoded.uid,
         updatedBy: decoded.uid,
+        createdByEmail: decoded.email, // Add email of the user who created the product
       });
 
-      //  Events (NOW HAS productName + deltaQuantity)
       tx.create(eventRef, {
         type: "product_create",
         productId,
-        productName: name, //  ADDED
-        category, //  optional but useful
-        deltaQuantity: quantity, //  qty change / initial qty
+        productName: name,
+        category,
+        deltaQuantity: quantity,
         at: now,
         by: decoded.uid,
+        byEmail: decoded.email, // Add email of the user who created the product
       });
 
-      //  analytics_products
       tx.set(productAnalyticsRef, {
         productId,
         name,
         category,
         quantity,
         minStock,
+        maxStock,
         stockStatus,
         expirationDate,
         supplier: supplierValue,
@@ -130,9 +127,9 @@ export async function POST(req: Request) {
         lastEventAt: now,
         lastEventType: "product_create",
         lastEventBy: decoded.uid,
+        lastEventByEmail: decoded.email, // Add email of the user who created the product
       });
 
-      //  dashboard_analytics/global
       tx.set(
         globalDashRef,
         {
@@ -148,11 +145,11 @@ export async function POST(req: Request) {
           lastEventAt: now,
           lastEventType: "product_create",
           lastEventBy: decoded.uid,
+          lastEventByEmail: decoded.email, // Add email of the user who created the product
         },
         { merge: true },
       );
 
-      //  Treat initial qty as Stock-In + logs + analytics_daily
       if (quantity > 0) {
         tx.set(stockInLogRef, {
           productId,
@@ -163,6 +160,7 @@ export async function POST(req: Request) {
           at: now,
           createdAt: now,
           createdBy: decoded.uid,
+          createdByEmail: decoded.email, // Add email of the user who created the stock-in
         });
 
         tx.set(

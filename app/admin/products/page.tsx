@@ -36,6 +36,7 @@ type Product = {
   category: string;
   quantity: number;
   minStock: number;
+  maxStock: number; // Add maxStock here
   expirationDate: string | null;
   supplier?: string | null;
   imageUrl: string | null;
@@ -60,7 +61,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function parseExpiryMs(v: any): number | null {
   if (!v) return null;
-  // If you ever store Timestamp later
   if (typeof v?.toDate === "function") return v.toDate().getTime();
 
   const d = new Date(String(v));
@@ -94,6 +94,7 @@ export default function AdminProductsPage() {
     category: "Uncategorized",
     quantity: 0,
     minStock: 0,
+    maxStock: 0, // Add maxStock here
     expirationDate: "" as string,
     supplier: "" as string,
   });
@@ -148,6 +149,7 @@ export default function AdminProductsPage() {
             category: String(v.category ?? "Uncategorized"),
             quantity: safeNum(v.quantity),
             minStock: safeNum(v.minStock),
+            maxStock: safeNum(v.maxStock), // Add maxStock here
             expirationDate: v.expirationDate ?? null,
             supplier: v.supplier ?? null,
             imageUrl: v.imageUrl ?? null,
@@ -196,6 +198,7 @@ export default function AdminProductsPage() {
       category: "Uncategorized",
       quantity: 0,
       minStock: 0,
+      maxStock: 0, // Reset maxStock
       expirationDate: "",
       supplier: "",
     });
@@ -215,6 +218,7 @@ export default function AdminProductsPage() {
       category: p.category || "Uncategorized",
       quantity: safeNum(p.quantity),
       minStock: safeNum(p.minStock),
+      maxStock: safeNum(p.maxStock), // Set maxStock
       expirationDate: p.expirationDate ?? "",
       supplier: String(p.supplier ?? ""),
     });
@@ -230,7 +234,8 @@ export default function AdminProductsPage() {
 
     const quantity = safeNum(form.quantity);
     const minStock = safeNum(form.minStock);
-    if (quantity < 0 || minStock < 0)
+    const maxStock = safeNum(form.maxStock); // Add maxStock here
+    if (quantity < 0 || minStock < 0 || maxStock < 0)
       return message.error("Quantity and minimum stock must be 0 or higher");
 
     const supplier = form.supplier.trim();
@@ -245,7 +250,6 @@ export default function AdminProductsPage() {
         imageFolder?: string;
       } = {};
 
-      // create -> temp upload
       if (file && !editing?.id) {
         const tempId = `temp_${Date.now()}`;
         const up = await uploadProductImage({
@@ -273,6 +277,7 @@ export default function AdminProductsPage() {
             category: form.category || "Uncategorized",
             quantity,
             minStock,
+            maxStock, // Add maxStock
             expirationDate: form.expirationDate ? form.expirationDate : null,
             supplier: supplier ? supplier : null,
             ...imagePatch,
@@ -291,6 +296,7 @@ export default function AdminProductsPage() {
           category: form.category || "Uncategorized",
           quantity,
           minStock,
+          maxStock, // Add maxStock
           expirationDate: form.expirationDate ? form.expirationDate : null,
           supplier: supplier ? supplier : null,
         };
@@ -385,6 +391,7 @@ export default function AdminProductsPage() {
             type="number"
             min={1}
             defaultValue={qty}
+            max={p.maxStock - p.quantity} // Set max limit for input
             onChange={(e) => (qty = Number(e.target.value))}
             placeholder="Quantity"
           />
@@ -397,6 +404,11 @@ export default function AdminProductsPage() {
       ),
       okText: "Record Stock-In",
       async onOk() {
+        if (qty + p.quantity > p.maxStock) {
+          message.error("Cannot add stock. Maximum stock limit reached.");
+          return;
+        }
+
         const res = await fetch("/api/admin/stock-in/create", {
           method: "POST",
           headers: {
@@ -489,6 +501,7 @@ export default function AdminProductsPage() {
               onClick={() => openStockInForProduct(r)}
               className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
               aria-label="Stock-in"
+              disabled={r.quantity >= r.maxStock} // Disable button if quantity >= maxStock
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -513,6 +526,13 @@ export default function AdminProductsPage() {
       title: "Min",
       dataIndex: "minStock",
       key: "minStock",
+      width: 90,
+      render: (v: any) => <span className="text-gray-700">{safeNum(v)}</span>,
+    },
+    {
+      title: "Max",
+      dataIndex: "maxStock",
+      key: "maxStock", // Add Max stock column
       width: 90,
       render: (v: any) => <span className="text-gray-700">{safeNum(v)}</span>,
     },
@@ -657,7 +677,6 @@ export default function AdminProductsPage() {
                     </div>
                   )}
 
-                  {/* Low Stock label (existing) */}
                   {isLowStock(p) ? (
                     <div className="absolute top-3 left-3">
                       <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-600 text-white">
@@ -666,7 +685,6 @@ export default function AdminProductsPage() {
                     </div>
                   ) : null}
 
-                  {/* Expiring Soon label (NEW) — same style, yellow */}
                   {isSoon ? (
                     <div className="absolute top-3 right-3">
                       <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-500 text-white">
@@ -705,6 +723,7 @@ export default function AdminProductsPage() {
                         onClick={() => openStockInForProduct(p)}
                         className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
                         aria-label="Stock-in"
+                        disabled={p.quantity >= p.maxStock} // Disable if max stock reached
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -712,6 +731,10 @@ export default function AdminProductsPage() {
 
                     <div className="text-xs text-gray-500 text-right">
                       Min: <span className="font-semibold">{p.minStock}</span>
+                      Max: <span className="font-semibold">
+                        {p.maxStock}
+                      </span>{" "}
+                      {/* Display max stock */}
                       {p.expirationDate ? (
                         <div className="mt-0.5">
                           Exp:{" "}

@@ -67,8 +67,6 @@ export async function POST(req: Request) {
           : "ok";
 
     // OPTIONAL: delete logs too (recommended if you truly want “everything removed”)
-    // NOTE: These are not inside the transaction (queries are not allowed in tx writes).
-    // If you don’t want to delete logs, remove these blocks.
     const stockInLogsSnap = await adminDb
       .collection("stock_in_logs")
       .where("productId", "==", productId)
@@ -103,9 +101,11 @@ export async function POST(req: Request) {
       tx.create(deleteEventRef, {
         type: "product_delete",
         productId,
+        productName: product?.name, // Added product name here
         deltaQuantity: -quantity,
         at: now,
         by: decoded.uid,
+        byEmail: decoded.email, // Added email of the user
       });
 
       tx.set(
@@ -123,13 +123,13 @@ export async function POST(req: Request) {
           lastEventAt: now,
           lastEventType: "product_delete",
           lastEventBy: decoded.uid,
+          lastEventByEmail: decoded.email, // Add email of the user who deleted the product
         },
         { merge: true },
       );
     });
 
     // 2) Delete related logs/events in batches (outside transaction)
-    // (Firestore batch limit is 500 ops; chunk it)
     const CHUNK = 450;
     for (let i = 0; i < extraRefsToDelete.length; i += CHUNK) {
       const batch = adminDb.batch();
@@ -138,22 +138,16 @@ export async function POST(req: Request) {
     }
 
     // 3) Cloudinary cleanup AFTER Firestore work:
-    // - delete the main imagePublicId (if any)
-    // - delete everything under folder prefix
-    // - delete the folder itself
     try {
       if (imagePublicId) {
         await cloudinary.uploader.destroy(imagePublicId);
       }
 
       if (imageFolder) {
-        // Delete all assets under that folder (prefix)
         await cloudinary.api.delete_resources_by_prefix(imageFolder);
-        // Then remove folder
         await cloudinary.api.delete_folder(imageFolder);
       }
     } catch (err: any) {
-      // Fallback: queue cleanup task if Cloudinary fails
       await adminDb.collection("cleanup_tasks").add({
         type: "cloudinary_delete_product_assets",
         productId,

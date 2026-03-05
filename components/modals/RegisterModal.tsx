@@ -22,7 +22,7 @@ async function copyToClipboard(text: string) {
 }
 
 function roleLabel(role: AdminRole) {
-  return role === "superadmin" ? "Super Admin" : "Admin";
+  return role === "superadmin" ? "Owner" : "Admin";
 }
 
 function CopyLine({
