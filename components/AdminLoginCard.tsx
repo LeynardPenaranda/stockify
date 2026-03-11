@@ -104,6 +104,7 @@ export default function AdminLoginCard({ onSuccess }: Props) {
             disabled={loading}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary transition disabled:opacity-60"
             placeholder="e.g., admin@gmail.com"
+            style={{ color: "var(--color-primary)" }}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
@@ -116,6 +117,7 @@ export default function AdminLoginCard({ onSuccess }: Props) {
             disabled={loading}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-primary focus:border-primary pr-10 transition disabled:opacity-60"
             placeholder="••••••••"
+            style={{ color: "var(--color-primary)" }}
             type={isOpenEye ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
