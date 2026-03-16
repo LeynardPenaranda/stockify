@@ -12,7 +12,7 @@ type Product = {
   category: string;
   quantity: number;
   minStock: number;
-  maxStock: number; // Add maxStock here
+  maxStock: number;
   expirationDate: string | null;
   supplier?: string | null;
   imageUrl: string | null;
@@ -30,8 +30,8 @@ type FormState = {
   category: string;
   quantity: number;
   minStock: number;
-  maxStock: number; // Add maxStock here
-  expirationDate: string; // "" or YYYY-MM-DD
+  maxStock: number;
+  expirationDate: string;
   supplier: string;
 };
 
@@ -73,13 +73,19 @@ export default function ProductUpsertModal({
     [fileList, setFileList],
   );
 
-  // Force consistent black text + white bg for inputs (fix laptop/monitor differences)
-  const inputClass = "bg-white text-gray-900 placeholder:text-gray-400";
-  const dateInputClass = "bg-white text-gray-900 placeholder:text-gray-400";
+  const inputClass = "bg-white text-[#102a4d] placeholder:text-[#102a4d]/45";
+  const dateInputClass =
+    "bg-white text-[#102a4d] placeholder:text-[#102a4d]/45";
+  const labelClass = "mb-1 text-xs text-[#102a4d]";
+  const helperTextClass = "text-xs text-[#102a4d]";
 
   return (
     <Modal
-      title={editing ? "Edit Product" : "Add Product"}
+      title={
+        <span className="font-semibold text-[#102a4d]">
+          {editing ? "Edit Product" : "Add Product"}
+        </span>
+      }
       open={open}
       onCancel={onCancel}
       onOk={onSubmit}
@@ -87,6 +93,14 @@ export default function ProductUpsertModal({
       confirmLoading={saving}
       destroyOnHidden
       style={{ top: 16 }}
+      okButtonProps={{
+        className:
+          "!bg-[#102a4d] hover:!bg-[#17335e] !border-[#102a4d] hover:!border-[#17335e] !text-white !shadow-none",
+      }}
+      cancelButtonProps={{
+        className:
+          "!text-[#102a4d] !border-black/10 hover:!text-[#17335e] hover:!border-[#17335e]",
+      }}
       styles={{
         body: {
           maxHeight: "calc(92dvh - 120px)",
@@ -95,9 +109,9 @@ export default function ProductUpsertModal({
         },
       }}
     >
-      <div className="space-y-3">
+      <div className="space-y-3 text-[#102a4d]">
         <div>
-          <div className="text-xs text-gray-500 mb-1">Name</div>
+          <div className={labelClass}>Name</div>
           <Input
             value={form.name}
             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
@@ -107,7 +121,7 @@ export default function ProductUpsertModal({
         </div>
 
         <div>
-          <div className="text-xs text-gray-500 mb-1">Supplier</div>
+          <div className={labelClass}>Supplier</div>
           <Input
             value={form.supplier}
             onChange={(e) =>
@@ -118,9 +132,9 @@ export default function ProductUpsertModal({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <div className="text-xs text-gray-500 mb-1">Category</div>
+            <div className={labelClass}>Category</div>
             <Input
               value={form.category}
               onChange={(e) =>
@@ -132,7 +146,7 @@ export default function ProductUpsertModal({
           </div>
 
           <div>
-            <div className="text-xs text-gray-500 mb-1">Expiration Date</div>
+            <div className={labelClass}>Expiration Date</div>
             <Input
               type="date"
               value={form.expirationDate}
@@ -144,9 +158,9 @@ export default function ProductUpsertModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <div className="text-xs text-gray-500 mb-1">Quantity</div>
+            <div className={labelClass}>Quantity</div>
             <Input
               type="number"
               min={0}
@@ -159,9 +173,7 @@ export default function ProductUpsertModal({
           </div>
 
           <div>
-            <div className="text-xs text-gray-500 mb-1">
-              Minimum Stock Level
-            </div>
+            <div className={labelClass}>Minimum Stock Level</div>
             <Input
               type="number"
               min={0}
@@ -174,14 +186,13 @@ export default function ProductUpsertModal({
           </div>
 
           <div>
-            <div className="text-xs text-gray-500 mb-1">Max Stock Level</div>
+            <div className={labelClass}>Max Stock Level</div>
             <Input
               type="number"
               min={0}
-              value={form.maxStock} // Add maxStock here
-              onChange={
-                (e) =>
-                  setForm((s) => ({ ...s, maxStock: safeNum(e.target.value) })) // Set maxStock
+              value={form.maxStock}
+              onChange={(e) =>
+                setForm((s) => ({ ...s, maxStock: safeNum(e.target.value) }))
               }
               className={inputClass}
             />
@@ -189,27 +200,27 @@ export default function ProductUpsertModal({
         </div>
 
         <div>
-          <div className="text-xs text-gray-500 mb-2">Product Image</div>
+          <div className="mb-2 text-xs text-[#102a4d]">Product Image</div>
 
           {editing?.imageUrl ? (
             <div className="mb-2 flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-black/5">
+              <div className="h-14 w-14 overflow-hidden rounded-2xl bg-black/5">
                 <Image
                   src={editing.imageUrl}
                   alt="Current product image"
                   width={56}
                   height={56}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                 />
               </div>
-              <div className="text-xs text-gray-500">
+              <div className={helperTextClass}>
                 Uploading a new image will replace the old one.
               </div>
             </div>
           ) : null}
 
           <Upload {...uploadProps}>
-            <div>
+            <div className="text-[#102a4d]">
               <PlusOutlined />
               <div className="mt-2">Upload</div>
             </div>

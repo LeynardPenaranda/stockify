@@ -36,7 +36,7 @@ type Product = {
   category: string;
   quantity: number;
   minStock: number;
-  maxStock: number; // Add maxStock here
+  maxStock: number;
   expirationDate: string | null;
   supplier?: string | null;
   imageUrl: string | null;
@@ -55,7 +55,6 @@ function isLowStock(p: Product) {
   return safeNum(p.quantity) <= safeNum(p.minStock);
 }
 
-// ===== Expiry helpers (2 weeks) =====
 const EXPIRY_WARNING_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -94,7 +93,7 @@ export default function AdminProductsPage() {
     category: "Uncategorized",
     quantity: 0,
     minStock: 0,
-    maxStock: 0, // Add maxStock here
+    maxStock: 0,
     expirationDate: "" as string,
     supplier: "" as string,
   });
@@ -102,7 +101,6 @@ export default function AdminProductsPage() {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // StockOut modal state
   const [openStockOut, setOpenStockOut] = useState(false);
   const [stockOutProduct, setStockOutProduct] = useState<Product | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -111,7 +109,6 @@ export default function AdminProductsPage() {
   const primaryBtnClass =
     "bg-primary hover:bg-hover border-primary hover:border-hover text-white";
 
-  // Auth
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) {
@@ -135,7 +132,6 @@ export default function AdminProductsPage() {
     return () => unsub();
   }, []);
 
-  // Live products list
   useEffect(() => {
     const qy = query(collection(db, "products"), orderBy("updatedAt", "desc"));
     const unsub = onSnapshot(
@@ -149,7 +145,7 @@ export default function AdminProductsPage() {
             category: String(v.category ?? "Uncategorized"),
             quantity: safeNum(v.quantity),
             minStock: safeNum(v.minStock),
-            maxStock: safeNum(v.maxStock), // Add maxStock here
+            maxStock: safeNum(v.maxStock),
             expirationDate: v.expirationDate ?? null,
             supplier: v.supplier ?? null,
             imageUrl: v.imageUrl ?? null,
@@ -198,7 +194,7 @@ export default function AdminProductsPage() {
       category: "Uncategorized",
       quantity: 0,
       minStock: 0,
-      maxStock: 0, // Reset maxStock
+      maxStock: 0,
       expirationDate: "",
       supplier: "",
     });
@@ -218,7 +214,7 @@ export default function AdminProductsPage() {
       category: p.category || "Uncategorized",
       quantity: safeNum(p.quantity),
       minStock: safeNum(p.minStock),
-      maxStock: safeNum(p.maxStock), // Set maxStock
+      maxStock: safeNum(p.maxStock),
       expirationDate: p.expirationDate ?? "",
       supplier: String(p.supplier ?? ""),
     });
@@ -234,9 +230,10 @@ export default function AdminProductsPage() {
 
     const quantity = safeNum(form.quantity);
     const minStock = safeNum(form.minStock);
-    const maxStock = safeNum(form.maxStock); // Add maxStock here
-    if (quantity < 0 || minStock < 0 || maxStock < 0)
+    const maxStock = safeNum(form.maxStock);
+    if (quantity < 0 || minStock < 0 || maxStock < 0) {
       return message.error("Quantity and minimum stock must be 0 or higher");
+    }
 
     const supplier = form.supplier.trim();
 
@@ -277,7 +274,7 @@ export default function AdminProductsPage() {
             category: form.category || "Uncategorized",
             quantity,
             minStock,
-            maxStock, // Add maxStock
+            maxStock,
             expirationDate: form.expirationDate ? form.expirationDate : null,
             supplier: supplier ? supplier : null,
             ...imagePatch,
@@ -296,7 +293,7 @@ export default function AdminProductsPage() {
           category: form.category || "Uncategorized",
           quantity,
           minStock,
-          maxStock, // Add maxStock
+          maxStock,
           expirationDate: form.expirationDate ? form.expirationDate : null,
           supplier: supplier ? supplier : null,
         };
@@ -391,7 +388,7 @@ export default function AdminProductsPage() {
             type="number"
             min={1}
             defaultValue={qty}
-            max={p.maxStock - p.quantity} // Set max limit for input
+            max={p.maxStock - p.quantity}
             onChange={(e) => (qty = Number(e.target.value))}
             placeholder="Quantity"
           />
@@ -439,42 +436,44 @@ export default function AdminProductsPage() {
 
   const columns = [
     {
-      title: "Product",
+      title: <span className="font-semibold text-[#102a4d]">Product</span>,
       key: "product",
       render: (_: any, r: Product) => (
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl overflow-hidden bg-black/5 shrink-0">
+          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-black/5">
             {r.imageUrl ? (
               <Image
                 src={r.imageUrl}
                 alt={r.name}
                 width={44}
                 height={44}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
             ) : (
-              <div className="w-full h-full grid place-items-center text-black/30">
-                <Boxes className="w-5 h-5" />
+              <div className="grid h-full w-full place-items-center text-[#102a4d]/40">
+                <Boxes className="h-5 w-5" />
               </div>
             )}
           </div>
           <div className="min-w-0">
-            <div className="font-semibold text-gray-900 truncate">{r.name}</div>
-            <div className="text-xs text-gray-500 truncate">{r.category}</div>
+            <div className="truncate font-semibold text-[#102a4d]">
+              {r.name}
+            </div>
+            <div className="truncate text-xs text-[#102a4d]">{r.category}</div>
           </div>
         </div>
       ),
     },
     {
-      title: "Supplier",
+      title: <span className="font-semibold text-[#102a4d]">Supplier</span>,
       dataIndex: "supplier",
       key: "supplier",
       width: 180,
       render: (v: any) =>
-        v ? String(v) : <span className="text-gray-400">—</span>,
+        v ? String(v) : <span className="text-[#102a4d]">—</span>,
     },
     {
-      title: "Qty",
+      title: <span className="font-semibold text-[#102a4d]">Qty</span>,
       dataIndex: "quantity",
       key: "quantity",
       width: 220,
@@ -482,28 +481,28 @@ export default function AdminProductsPage() {
         const { isSoon, days } = expiryInfo(r);
 
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-[#102a4d]">
             <button
               type="button"
               onClick={() => openStockOutForProduct(r)}
-              className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
               aria-label="Stock-out"
             >
-              <Minus className="w-4 h-4" />
+              <Minus className="h-4 w-4" />
             </button>
 
-            <div className="min-w-11 text-center font-semibold text-gray-900">
+            <div className="min-w-11 text-center font-semibold text-[#102a4d]">
               {safeNum(v)}
             </div>
 
             <button
               type="button"
               onClick={() => openStockInForProduct(r)}
-              className="h-9 w-9 rounded-lg border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
               aria-label="Stock-in"
-              disabled={r.quantity >= r.maxStock} // Disable button if quantity >= maxStock
+              disabled={r.quantity >= r.maxStock}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
             </button>
 
             {isLowStock(r) ? (
@@ -512,7 +511,6 @@ export default function AdminProductsPage() {
               </Tag>
             ) : null}
 
-            {/* Optional: small expiry tag beside qty too */}
             {!isLowStock(r) && isSoon ? (
               <Tag color="gold" className="m-0">
                 Exp {typeof days === "number" ? `(${days}d)` : ""}
@@ -523,33 +521,33 @@ export default function AdminProductsPage() {
       },
     },
     {
-      title: "Min",
+      title: <span className="font-semibold text-[#102a4d]">Min</span>,
       dataIndex: "minStock",
       key: "minStock",
       width: 90,
-      render: (v: any) => <span className="text-gray-700">{safeNum(v)}</span>,
+      render: (v: any) => <span className="text-[#102a4d]">{safeNum(v)}</span>,
     },
     {
-      title: "Max",
+      title: <span className="font-semibold text-[#102a4d]">Max</span>,
       dataIndex: "maxStock",
-      key: "maxStock", // Add Max stock column
+      key: "maxStock",
       width: 90,
-      render: (v: any) => <span className="text-gray-700">{safeNum(v)}</span>,
+      render: (v: any) => <span className="text-[#102a4d]">{safeNum(v)}</span>,
     },
     {
-      title: "Expiration",
+      title: <span className="font-semibold text-[#102a4d]">Expiration</span>,
       dataIndex: "expirationDate",
       key: "expirationDate",
       width: 170,
       render: (_: any, r: Product) => {
-        if (!r.expirationDate) return <span className="text-gray-400">—</span>;
+        if (!r.expirationDate) return <span className="text-[#102a4d]">—</span>;
 
         const { isSoon, days } = expiryInfo(r);
 
         return (
-          <span className="inline-flex items-center gap-2 text-gray-700">
+          <span className="inline-flex items-center gap-2 text-[#102a4d]">
             <span className="inline-flex items-center gap-1">
-              <Calendar className="w-4 h-4" /> {String(r.expirationDate)}
+              <Calendar className="h-4 w-4" /> {String(r.expirationDate)}
             </span>
 
             {isSoon ? (
@@ -567,7 +565,9 @@ export default function AdminProductsPage() {
       width: 180,
       render: (_: any, r: Product) => (
         <div className="flex items-center justify-end gap-2">
-          <Button onClick={() => openEdit(r)}>Edit</Button>
+          <Button className="text-[#102a4d]!" onClick={() => openEdit(r)}>
+            Edit
+          </Button>
           <Button danger onClick={() => onDelete(r)}>
             Delete
           </Button>
@@ -577,13 +577,13 @@ export default function AdminProductsPage() {
   ];
 
   return (
-    <div className="p-4 lg:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
+    <div className="p-4 text-[#102a4d] lg:p-6">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-lg font-bold text-gray-900">
+          <div className="text-lg font-bold text-[#102a4d]">
             Product Management
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-[#102a4d]">
             Add, edit, delete, categorize, and set minimum stock levels.
           </div>
         </div>
@@ -591,20 +591,20 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={openCreate}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm ${primaryBtnClass} active:scale-[0.98] transition`}
+          className={`inline-flex items-center gap-2 rounded-xl bg-[#102a4d] px-4 py-2.5 text-sm text-white ${primaryBtnClass} cursor-pointer transition active:scale-[0.98]`}
         >
           <PlusOutlined />
           Add Product
         </button>
       </div>
 
-      <div className="bg-white border border-black/10 rounded-2xl p-3 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-black/10 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search products or supplier..."
-          prefix={<SearchOutlined />}
-          className="sm:max-w-sm"
+          prefix={<SearchOutlined className="text-[#102a4d]" />}
+          className="sm:max-w-sm [&_.ant-input]:text-[#102a4d] [&_.ant-input-prefix]:text-[#102a4d]"
           allowClear
         />
 
@@ -614,10 +614,12 @@ export default function AdminProductsPage() {
             onChange={(v) => setCat(v)}
             placeholder="All categories"
             allowClear
-            className="min-w-45"
+            className="min-w-45 [&_.ant-select-selection-item]:text-[#102a4d] [&_.ant-select-selection-placeholder]:text-[#102a4d]/60"
             options={categories.map((c) => ({ label: c, value: c }))}
           />
-          <div className="text-xs text-gray-500">{filtered.length} item(s)</div>
+          <div className="text-xs text-[#102a4d]">
+            {filtered.length} item(s)
+          </div>
         </div>
       </div>
 
@@ -629,11 +631,22 @@ export default function AdminProductsPage() {
             columns={columns as any}
             dataSource={filtered}
             pagination={{ pageSize: 8, showSizeChanger: false }}
+            className="
+              [&_.ant-table-thead>tr>th]:text-[#102a4d]!
+              [&_.ant-table-thead>tr>th]:font-semibold
+              [&_.ant-table-tbody>tr>td]:text-[#102a4d]!
+              [&_.ant-pagination]:text-[#102a4d]!
+              [&_.ant-pagination-item>a]:text-[#102a4d]!
+              [&_.ant-pagination-prev]:text-[#102a4d]!
+              [&_.ant-pagination-next]:text-[#102a4d]!
+            "
             locale={{
               emptyText: (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="No products found"
+                  description={
+                    <span className="text-[#102a4d]">No products found</span>
+                  }
                 />
               ),
             }}
@@ -641,16 +654,18 @@ export default function AdminProductsPage() {
         </Card>
       </div>
 
-      <div className="md:hidden grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:hidden">
         {loading ? (
           <Card className="rounded-2xl border-black/10">
-            <div className="text-sm text-gray-500">Loading…</div>
+            <div className="text-sm text-[#102a4d]">Loading…</div>
           </Card>
         ) : filtered.length === 0 ? (
           <Card className="rounded-2xl border-black/10">
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="No products found"
+              description={
+                <span className="text-[#102a4d]">No products found</span>
+              }
             />
           </Card>
         ) : (
@@ -660,9 +675,9 @@ export default function AdminProductsPage() {
             return (
               <Card
                 key={p.id}
-                className="rounded-2xl border-black/10 overflow-hidden p-0"
+                className="overflow-hidden rounded-2xl border-black/10 p-0"
               >
-                <div className="relative w-full h-56 bg-black/5">
+                <div className="relative h-56 w-full bg-black/5">
                   {p.imageUrl ? (
                     <Image
                       src={p.imageUrl}
@@ -672,22 +687,22 @@ export default function AdminProductsPage() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full grid place-items-center text-black/30">
-                      <Boxes className="w-8 h-8" />
+                    <div className="grid h-full w-full place-items-center text-[#102a4d]/40">
+                      <Boxes className="h-8 w-8" />
                     </div>
                   )}
 
                   {isLowStock(p) ? (
-                    <div className="absolute top-3 left-3">
-                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-600 text-white">
+                    <div className="absolute left-3 top-3">
+                      <span className="rounded-full bg-red-600 px-2 py-1 text-xs font-semibold text-white">
                         Low Stock
                       </span>
                     </div>
                   ) : null}
 
                   {isSoon ? (
-                    <div className="absolute top-3 right-3">
-                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-500 text-white">
+                    <div className="absolute right-3 top-3">
+                      <span className="rounded-full bg-yellow-500 px-2 py-1 text-xs font-semibold text-white">
                         Expiring Soon{" "}
                         {typeof days === "number" ? `• ${days}d` : ""}
                       </span>
@@ -696,9 +711,9 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="p-4">
-                  <div className="font-semibold text-gray-900">{p.name}</div>
-                  <div className="text-xs text-gray-500">{p.category}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="font-semibold text-[#102a4d]">{p.name}</div>
+                  <div className="text-xs text-[#102a4d]">{p.category}</div>
+                  <div className="mt-1 text-xs text-[#102a4d]">
                     Supplier:{" "}
                     <span className="font-semibold">{p.supplier || "—"}</span>
                   </div>
@@ -708,38 +723,36 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => openStockOutForProduct(p)}
-                        className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+                        className="grid h-10 w-10 place-items-center rounded-xl border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
                         aria-label="Stock-out"
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="h-4 w-4" />
                       </button>
 
-                      <div className="min-w-12 text-center font-bold text-gray-900">
+                      <div className="min-w-12 text-center font-bold text-[#102a4d]">
                         {p.quantity}
                       </div>
 
                       <button
                         type="button"
                         onClick={() => openStockInForProduct(p)}
-                        className="h-10 w-10 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition grid place-items-center"
+                        className="grid h-10 w-10 place-items-center rounded-xl border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
                         aria-label="Stock-in"
-                        disabled={p.quantity >= p.maxStock} // Disable if max stock reached
+                        disabled={p.quantity >= p.maxStock}
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="h-4 w-4" />
                       </button>
                     </div>
 
-                    <div className="text-xs text-gray-500 text-right">
+                    <div className="text-right text-xs text-[#102a4d]">
                       Min: <span className="font-semibold">{p.minStock}</span>
-                      Max: <span className="font-semibold">
-                        {p.maxStock}
-                      </span>{" "}
-                      {/* Display max stock */}
+                      <br />
+                      Max: <span className="font-semibold">{p.maxStock}</span>
                       {p.expirationDate ? (
                         <div className="mt-0.5">
                           Exp:{" "}
                           <span
-                            className={`font-semibold ${isSoon ? "text-yellow-700" : ""}`}
+                            className={`font-semibold ${isSoon ? "text-yellow-700" : "text-[#102a4d]"}`}
                           >
                             {p.expirationDate}
                           </span>
@@ -749,7 +762,11 @@ export default function AdminProductsPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">
-                    <Button size="small" onClick={() => openEdit(p)}>
+                    <Button
+                      size="small"
+                      className="text-[#102a4d]!"
+                      onClick={() => openEdit(p)}
+                    >
                       Edit
                     </Button>
                     <Button size="small" danger onClick={() => onDelete(p)}>

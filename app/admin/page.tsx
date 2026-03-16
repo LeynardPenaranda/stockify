@@ -22,7 +22,6 @@ import {
   MinusCircle,
   Pencil,
   Trash2,
-  Ban,
   Clock,
 } from "lucide-react";
 import { auth } from "@/src/lib/firebase/client";
@@ -54,7 +53,23 @@ function tsToMs(ts: any): number | null {
 
 function fmtMaybeTs(v: any) {
   if (!v) return "—";
-  if (typeof v === "string") return v;
+
+  if (typeof v === "string") {
+    const d = new Date(v);
+    const ms = d.getTime();
+
+    if (Number.isFinite(ms)) {
+      return new Date(ms).toLocaleString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
+    return v;
+  }
 
   const ms = tsToMs(v);
   if (!ms) return "—";
@@ -68,13 +83,34 @@ function fmtMaybeTs(v: any) {
   });
 }
 
+function toDayKey(v: any) {
+  if (!v) return "";
+
+  if (typeof v === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+    const d = new Date(v);
+    const ms = d.getTime();
+
+    if (Number.isFinite(ms)) {
+      return new Date(ms).toLocaleDateString("en-CA");
+    }
+
+    return v;
+  }
+
+  const ms = tsToMs(v);
+  if (!ms) return "";
+
+  return new Date(ms).toLocaleDateString("en-CA");
+}
+
 function shortDate(dateStr: any) {
   const s = String(dateStr ?? "");
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(5); // MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(5);
   return s;
 }
 
-/** Detect container width for compact mode */
 function useContainerWidth<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [w, setW] = useState(0);
@@ -195,39 +231,48 @@ function SkeletonCard() {
   );
 }
 
-// ---------------- Events helpers ----------------
 function eventMeta(type: string) {
   const t = String(type || "");
-  if (t === "product_create")
+
+  if (t === "product_create") {
     return {
       label: "Product Added",
       icon: <PlusCircle size={16} />,
       badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
     };
-  if (t === "stock_in")
+  }
+
+  if (t === "stock_in") {
     return {
       label: "Stock In",
       icon: <PlusCircle size={16} />,
       badge: "bg-sky-50 text-sky-700 border-sky-200",
     };
-  if (t === "stock_out")
+  }
+
+  if (t === "stock_out") {
     return {
       label: "Stock Out",
       icon: <MinusCircle size={16} />,
       badge: "bg-amber-50 text-amber-800 border-amber-200",
     };
-  if (t === "product_update")
+  }
+
+  if (t === "product_update") {
     return {
       label: "Product Updated",
       icon: <Pencil size={16} />,
       badge: "bg-slate-50 text-slate-700 border-slate-200",
     };
-  if (t === "product_delete")
+  }
+
+  if (t === "product_delete") {
     return {
       label: "Product Deleted",
       icon: <Trash2 size={16} />,
       badge: "bg-rose-50 text-rose-700 border-rose-200",
     };
+  }
 
   return {
     label: t || "Event",
@@ -236,7 +281,6 @@ function eventMeta(type: string) {
   };
 }
 
-// CompactLegend Component Definition
 function CompactLegend({
   payload,
   compact,
@@ -307,6 +351,8 @@ export default function AdminPage() {
         message: "Events deleted",
         description: `Deleted ${data.deleted ?? 0} event(s).`,
       });
+
+      await loadAll();
     } catch (e: any) {
       showToast({
         type: "danger",
@@ -318,7 +364,6 @@ export default function AdminPage() {
     }
   }
 
-  // get Firebase ID token (for admin API routes)
   async function getIdToken() {
     const { auth } = await import("@/src/lib/firebase/client");
     const user = auth.currentUser;
@@ -326,7 +371,6 @@ export default function AdminPage() {
     return await user.getIdToken(true);
   }
 
-  // fetch helper that adds Authorization header
   async function authedJson<T>(url: string): Promise<T> {
     const token = await getIdToken();
     const res = await fetch(url, {
@@ -379,25 +423,41 @@ export default function AdminPage() {
 
     return () => unsub();
   }, []);
-  // DAILY CHART (used for totals + graph)
+
   const dailyChart = useMemo(() => {
-    return daily
-      .filter((x: any) => {
-        const today = new Date().setHours(0, 0, 0, 0);
-        const date = tsToMs(x.day ?? x.date);
-        return date && new Date(date).setHours(0, 0, 0, 0) === today;
+    return [...daily]
+      .map((x: any) => {
+        const rawDay = x.day ?? x.date ?? x.id ?? "";
+        const ms = tsToMs(rawDay);
+
+        return {
+          date: toDayKey(rawDay),
+          stockInQty: safeNum(x.stockInQty),
+          stockOutQty: safeNum(x.stockOutQty),
+          _ms: ms,
+        };
       })
-      .map((x: any) => ({
-        date: x.day ?? x.id ?? x.date ?? "",
-        stockInQty: safeNum(x.stockInQty),
-        stockOutQty: safeNum(x.stockOutQty),
-      }));
+      .filter((x) => Boolean(x.date))
+      .sort((a, b) => {
+        if (a._ms !== null && b._ms !== null) return a._ms - b._ms;
+        return String(a.date).localeCompare(String(b.date));
+      });
   }, [daily]);
+
+  const todayRows = useMemo(() => {
+    const today = new Date().setHours(0, 0, 0, 0);
+
+    return dailyChart.filter((x) => {
+      if (x._ms === null) return false;
+      return new Date(x._ms).setHours(0, 0, 0, 0) === today;
+    });
+  }, [dailyChart]);
+
   const periodTotals = useMemo(() => {
     let stockInTotal = 0;
     let stockOutTotal = 0;
 
-    for (const r of dailyChart) {
+    for (const r of todayRows) {
       stockInTotal += safeNum(r.stockInQty);
       stockOutTotal += safeNum(r.stockOutQty);
     }
@@ -407,9 +467,8 @@ export default function AdminPage() {
       stockOutTotal,
       netTotal: stockInTotal - stockOutTotal,
     };
-  }, [dailyChart]);
+  }, [todayRows]);
 
-  // Inventory Trend: based on stockInQty and stockOutQty
   const inventoryTrend = useMemo(() => {
     const endQty = safeNum(global?.totalStockQty);
     const rows = [...dailyChart];
@@ -418,6 +477,7 @@ export default function AdminPage() {
     const nets = rows.map(
       (r) => safeNum(r.stockInQty) - safeNum(r.stockOutQty),
     );
+
     const suffix = new Array(nets.length).fill(0);
 
     for (let i = nets.length - 2; i >= 0; i--) {
@@ -430,7 +490,6 @@ export default function AdminPage() {
     }));
   }, [dailyChart, global?.totalStockQty]);
 
-  // TOP CARDS
   const topCards = useMemo(() => {
     const g = global || {};
     const totalProducts = safeNum(g.totalProducts);
@@ -439,18 +498,14 @@ export default function AdminPage() {
     return {
       totalProducts,
       totalStockQty,
-
       stockInTotal: periodTotals.stockInTotal,
       stockOutTotal: periodTotals.stockOutTotal,
       netTotal: periodTotals.netTotal,
-
       lastEventAt: g.lastEventAt,
       lastEventType: g.lastEventType ?? "—",
     };
   }, [global, periodTotals]);
 
-  // Map events to eventRows
-  // Modify the eventRows to include 'byEmail'
   const eventRows = useMemo(() => {
     return events.map((e: any, idx: number) => {
       const type = String(e.type ?? "");
@@ -462,21 +517,16 @@ export default function AdminPage() {
         typeLabel: meta.label,
         badgeClass: meta.badge,
         icon: meta.icon,
-
         at: e.at,
         atLabel: fmtMaybeTs(e.at),
-
         productName: e.productName ? String(e.productName) : null,
         productId: e.productId ? String(e.productId) : null,
-
-        // qty change
         deltaQuantity:
           e.deltaQuantity === undefined || e.deltaQuantity === null
             ? null
             : safeNum(e.deltaQuantity),
-
         by: e.by ? String(e.by) : null,
-        byEmail: e.by ? e.byEmail || "Unknown" : "Unknown",
+        byEmail: e.byEmail ? String(e.byEmail) : "Unknown",
       };
     });
   }, [events]);
@@ -487,7 +537,6 @@ export default function AdminPage() {
       className="min-h-screen w-full bg-slate-50 @container"
     >
       <div className="w-full px-4 py-4 md:px-6 md:py-6">
-        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
@@ -525,7 +574,6 @@ export default function AdminPage() {
           </div>
         ) : null}
 
-        {/* KPI row */}
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
           {loading ? (
             <>
@@ -551,7 +599,6 @@ export default function AdminPage() {
                 icon={<Boxes size={20} />}
                 tone="primary"
               />
-
               <StatCard
                 label="Stock In Total"
                 value={topCards.stockInTotal}
@@ -559,7 +606,6 @@ export default function AdminPage() {
                 icon={<PlusCircle size={20} />}
                 tone="primary"
               />
-
               <StatCard
                 label="Stock Out Total"
                 value={topCards.stockOutTotal}
@@ -567,7 +613,6 @@ export default function AdminPage() {
                 icon={<MinusCircle size={20} />}
                 tone="warn"
               />
-
               <StatCard
                 label="Last Update"
                 value={<span className="text-base font-semibold">Recent</span>}
@@ -587,15 +632,14 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Inventory-focused graphs + events */}
         <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
           <CardShell
             title="Inventory Quantity Trend"
             right="Estimated (last 30 days)"
             className="lg:col-span-3"
           >
-            <div className=" h-70 w-full">
-              <ResponsiveContainer>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={inventoryTrend}
                   margin={{
@@ -636,11 +680,11 @@ export default function AdminPage() {
 
           <CardShell
             title="Stock In vs Stock Out"
-            right="Daily (today)"
+            right="Daily (last 30 days)"
             className="lg:col-span-2"
           >
-            <div className="h-70 w-full">
-              <ResponsiveContainer>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={dailyChart}
                   margin={{
@@ -664,7 +708,6 @@ export default function AdminPage() {
                       <CompactLegend {...props} compact={compact} />
                     )}
                   />
-
                   <Area
                     type="monotone"
                     dataKey="stockInQty"
@@ -686,11 +729,9 @@ export default function AdminPage() {
             </div>
 
             <div className="mt-2 text-[11px] text-slate-500">
-              Totals on the cards are computed from the same{" "}
-              <code className="px-1">analytics_daily</code> data (sum of{" "}
-              <code className="px-1">stockInQty</code> and{" "}
-              <code className="px-1">stockOutQty</code>) so they stay synced
-              with this chart.
+              This chart shows daily stock movement for the last 30 days. The
+              top cards for Stock In and Stock Out still show today’s totals
+              only.
             </div>
           </CardShell>
 
@@ -705,7 +746,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={onDeleteAllEvents}
                     disabled={deletingAllEvents}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                     title="Super admin only"
                   >
                     <Trash2 size={14} />
@@ -716,7 +757,7 @@ export default function AdminPage() {
             }
             className="lg:col-span-1"
           >
-            <div className="max-h-70 space-y-2 overflow-y-auto pr-1">
+            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
               {loading ? (
                 <div className="rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   Loading events…
@@ -741,14 +782,12 @@ export default function AdminPage() {
                           </span>
                         </div>
 
-                        {/* Product Name */}
                         <div className="mt-1 text-xs text-slate-600">
                           <span className="font-medium text-slate-800">
                             {ev.productName ?? "Unknown Product"}
                           </span>
                         </div>
 
-                        {/* Quantity */}
                         {ev.deltaQuantity !== null ? (
                           <div className="mt-1 text-[11px] text-slate-500">
                             Qty:{" "}
@@ -760,7 +799,6 @@ export default function AdminPage() {
                           </div>
                         ) : null}
 
-                        {/* Email of the user who performed the action */}
                         {ev.byEmail ? (
                           <div className="mt-1 text-[11px] text-slate-500">
                             <span className="font-semibold text-slate-700">
