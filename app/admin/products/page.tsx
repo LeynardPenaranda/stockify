@@ -14,7 +14,7 @@ import {
   message,
 } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Boxes, Calendar, Minus, Plus } from "lucide-react";
+import { Boxes, Calendar, Minus, Plus, SquarePen, Trash } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/src/lib/firebase/client";
 import {
@@ -377,31 +377,45 @@ export default function AdminProductsPage() {
   async function openStockInForProduct(p: Product) {
     if (!idToken) return message.error("Not authenticated");
 
-    let qty = 1;
+    let qty: number | string = 1; // Allowing qty to be either a number or an empty string
     let supplier = "";
 
     Modal.confirm({
       title: `Stock-In: ${p.name}`,
       content: (
-        <div className="space-y-3 pt-2">
+        <div className="pt-2">
           <Input
             type="number"
             min={1}
             defaultValue={qty}
             max={p.maxStock - p.quantity}
-            onChange={(e) => (qty = Number(e.target.value))}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              if (value <= 0) {
+                qty = ""; // Reset to empty string if value is 0 or negative
+              } else {
+                qty = value;
+              }
+            }}
             placeholder="Quantity"
+            className="input-gap" // Custom class for spacing
           />
           <Input
             defaultValue={supplier}
             onChange={(e) => (supplier = e.target.value)}
             placeholder="Supplier (optional)"
+            className="input-gap" // Custom class for spacing
           />
         </div>
       ),
       okText: "Record Stock-In",
+      okButtonProps: {
+        style: { backgroundColor: "#102a4d" }, // Button background color
+      },
       async onOk() {
-        if (qty + p.quantity > p.maxStock) {
+        // Ensure qty is a number before performing any operation
+        const finalQty = typeof qty === "number" ? qty : 0; // Convert to 0 if qty is empty string
+        if (finalQty + p.quantity > p.maxStock) {
           message.error("Cannot add stock. Maximum stock limit reached.");
           return;
         }
@@ -414,7 +428,7 @@ export default function AdminProductsPage() {
           },
           body: JSON.stringify({
             productId: p.id,
-            quantity: qty,
+            quantity: finalQty,
             supplier,
             stockInByName: userName || null,
             stockInByEmail: userEmail || null,
@@ -567,9 +581,11 @@ export default function AdminProductsPage() {
         <div className="flex items-center justify-end gap-2">
           <Button className="text-[#102a4d]!" onClick={() => openEdit(r)}>
             Edit
+            <SquarePen className="h-4 w-4" />
           </Button>
           <Button danger onClick={() => onDelete(r)}>
             Delete
+            <Trash className="h-4 w-4" />
           </Button>
         </div>
       ),

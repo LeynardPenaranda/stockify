@@ -30,3 +30,7 @@ body {
 input {
   color: var(--color-primary) !important;
 }
+
+.input-gap {
+  margin-bottom: 16px !important; /* Adjust this value to control the gap */
+}

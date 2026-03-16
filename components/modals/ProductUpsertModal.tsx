@@ -163,11 +163,17 @@ export default function ProductUpsertModal({
             <div className={labelClass}>Quantity</div>
             <Input
               type="number"
-              min={0}
-              value={form.quantity}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, quantity: safeNum(e.target.value) }))
-              }
+              placeholder="Must be a number"
+              min={1} // Set the minimum value to 1
+              value={form.quantity || ""} // If quantity is 0 or undefined, it will be empty
+              onChange={(e) => {
+                const newValue =
+                  e.target.value === "" ? null : safeNum(e.target.value); // If empty, set to null
+                setForm((s) => ({
+                  ...s,
+                  quantity: newValue ?? 0, // Ensure it's a number (or 0 if empty)
+                }));
+              }}
               className={inputClass}
             />
           </div>
@@ -176,11 +182,17 @@ export default function ProductUpsertModal({
             <div className={labelClass}>Minimum Stock Level</div>
             <Input
               type="number"
-              min={0}
-              value={form.minStock}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, minStock: safeNum(e.target.value) }))
-              }
+              placeholder="Must be a number"
+              min={1} // Set the minimum value to 1
+              value={form.minStock || ""} // If minStock is 0 or undefined, it will be empty
+              onChange={(e) => {
+                const newValue =
+                  e.target.value === "" ? null : safeNum(e.target.value); // If empty, set to null
+                setForm((s) => ({
+                  ...s,
+                  minStock: newValue ?? 0, // Ensure it's a number (or 0 if empty)
+                }));
+              }}
               className={inputClass}
             />
           </div>
@@ -189,11 +201,17 @@ export default function ProductUpsertModal({
             <div className={labelClass}>Max Stock Level</div>
             <Input
               type="number"
-              min={0}
-              value={form.maxStock}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, maxStock: safeNum(e.target.value) }))
-              }
+              placeholder="Must be a number"
+              min={1} // Set the minimum value to 1
+              value={form.maxStock || ""} // If maxStock is 0 or undefined, it will be empty
+              onChange={(e) => {
+                const newValue =
+                  e.target.value === "" ? null : safeNum(e.target.value); // If empty, set to null
+                setForm((s) => ({
+                  ...s,
+                  maxStock: newValue ?? 0, // This ensures it's a number (or 0 if empty)
+                }));
+              }}
               className={inputClass}
             />
           </div>

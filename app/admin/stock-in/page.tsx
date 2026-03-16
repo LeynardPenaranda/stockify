@@ -263,11 +263,11 @@ export default function StockInPage() {
   return (
     <div className="p-4 lg:p-6 space-y-4">
       {/* CHART CARD */}
-      <Card className="rounded-2xl border-black/10">
+      <Card className="rounded-2xl border-#17335e/10">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <div className="font-bold text-gray-900">Stock-In Analytics</div>
-            <div className="text-xs text-gray-500">
+            <div className="font-bold text-#17335e">Stock-In Analytics</div>
+            <div className="text-xs text-#17335e">
               Last 30 days (Stock-In only)
             </div>
           </div>
@@ -296,9 +296,9 @@ export default function StockInPage() {
       </Card>
 
       {/* TABLE CARD */}
-      <Card className="rounded-2xl border-black/10">
+      <Card className="rounded-2xl border-#17335e/10">
         <div className="mb-3 flex items-center justify-between">
-          <div className="text-sm font-semibold text-gray-900">
+          <div className="text-sm font-semibold text-#17335e">
             Stock-In <span className="text-green-600">History</span>
           </div>
           <Tag color="green" className="m-0">
@@ -325,9 +325,7 @@ export default function StockInPage() {
               className="min-w-45"
               options={categories.map((c) => ({ label: c, value: c }))}
             />
-            <div className="text-xs text-gray-500">
-              {filtered.length} log(s)
-            </div>
+            <div className="text-xs text-#17335e">{filtered.length} log(s)</div>
           </div>
         </div>
 
@@ -365,10 +363,10 @@ export default function StockInPage() {
                     </div>
 
                     <div className="min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">
+                      <div className="font-semibold text-#17335e truncate">
                         {r.productName}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">
+                      <div className="text-xs text-#17335e truncate">
                         {r.category}
                       </div>
                     </div>
