@@ -27,6 +27,7 @@ import {
 import { auth } from "@/src/lib/firebase/client";
 import { useToast } from "@/src/hooks/useToast";
 import { onAuthStateChanged } from "firebase/auth";
+import { APP_TIME_ZONE, getAppDayKey } from "@/src/lib/date/appDay";
 
 type ApiOk<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -60,6 +61,7 @@ function fmtMaybeTs(v: any) {
 
     if (Number.isFinite(ms)) {
       return new Date(ms).toLocaleString("en-PH", {
+        timeZone: APP_TIME_ZONE,
         year: "numeric",
         month: "short",
         day: "2-digit",
@@ -75,6 +77,7 @@ function fmtMaybeTs(v: any) {
   if (!ms) return "—";
 
   return new Date(ms).toLocaleString("en-PH", {
+    timeZone: APP_TIME_ZONE,
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -445,12 +448,8 @@ export default function AdminPage() {
   }, [daily]);
 
   const todayRows = useMemo(() => {
-    const today = new Date().setHours(0, 0, 0, 0);
-
-    return dailyChart.filter((x) => {
-      if (x._ms === null) return false;
-      return new Date(x._ms).setHours(0, 0, 0, 0) === today;
-    });
+    const today = getAppDayKey();
+    return dailyChart.filter((x) => x.date === today);
   }, [dailyChart]);
 
   const periodTotals = useMemo(() => {

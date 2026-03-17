@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/src/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { getAppDayKey } from "@/src/lib/date/appDay";
 
 export const runtime = "nodejs";
 
@@ -13,10 +14,6 @@ type Body = {
   stockOutByName?: string | null;
   stockOutByEmail?: string | null;
 };
-
-function dayKey(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
 
 export async function POST(req: Request) {
   try {
@@ -70,7 +67,7 @@ export async function POST(req: Request) {
     }
 
     const now = new Date();
-    const day = dayKey(now);
+    const day = getAppDayKey(now);
 
     const productRef = adminDb.collection("products").doc(productId);
     const logRef = adminDb.collection("stock_out_logs").doc();

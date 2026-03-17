@@ -1,3 +1,5 @@
+import { getAppDayKey } from "@/src/lib/date/appDay";
+
 export function toLocaleDateTimeString(v: any) {
   const d =
     v?.toDate?.() ??
@@ -8,5 +10,5 @@ export function toLocaleDateTimeString(v: any) {
 }
 
 export function isoDay(d = new Date()) {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  return getAppDayKey(d);
 }

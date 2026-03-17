@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/src/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { getAppDayKey } from "@/src/lib/date/appDay";
 
 export const runtime = "nodejs";
-
-function dayKey(d: Date) {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
-}
 
 export async function POST(req: Request) {
   try {
@@ -55,7 +52,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid maxStock" }, { status: 400 });
 
     const now = new Date();
-    const day = dayKey(now);
+    const day = getAppDayKey(now);
 
     const stockStatus =
       quantity <= 0

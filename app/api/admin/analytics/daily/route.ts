@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/src/lib/firebase/admin";
+import { getAppDayKey } from "@/src/lib/date/appDay";
 
 export const runtime = "nodejs";
-
-function dayKey(d: Date) {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
-}
 
 export async function GET(req: Request) {
   try {
@@ -36,7 +33,7 @@ export async function GET(req: Request) {
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(now.getDate() - i);
-      keys.push(dayKey(d));
+      keys.push(getAppDayKey(d));
     }
 
     // Batch gets
