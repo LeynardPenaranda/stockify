@@ -310,7 +310,7 @@ export default function AdminsPage() {
   return (
     <div className="w-full min-h-dvh p-4 sm:p-6 bg-gray-50">
       <div className="w-full max-w-350 mx-auto">
-        <div className="rounded-2xl border border-black/5 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-black/5 bg-white text-[#17335e] shadow-sm overflow-hidden">
           <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -319,7 +319,7 @@ export default function AdminsPage() {
                     <ShieldPlus className="h-5 w-5 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                    <h1 className="text-base sm:text-lg font-semibold text-[#17335e] truncate">
                       Admin Management
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-500">
@@ -344,7 +344,7 @@ export default function AdminsPage() {
                   type="button"
                   onClick={fetchAdmins}
                   disabled={loadingAdmins}
-                  className="h-9 w-9 rounded-xl border border-black/10 bg-white hover:bg-black/5 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                  className="h-9 w-9 rounded-xl border border-black/10 bg-white text-[#17335e] hover:bg-black/5 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
                   aria-label="Refresh admins"
                   title="Refresh"
                 >
@@ -372,12 +372,12 @@ export default function AdminsPage() {
           <div className="p-4 sm:p-6">
             <div className="rounded-2xl border border-black/5 bg-white overflow-hidden">
               <div className="px-4 py-3 border-b border-black/5 flex items-center justify-between">
-                <div className="text-sm font-semibold text-gray-900">
+                <div className="text-sm font-semibold text-[#17335e]">
                   Admins
                 </div>
                 <div className="text-xs text-gray-500">
                   Total:{" "}
-                  <span className="font-medium text-gray-800">
+                  <span className="font-medium text-[#17335e]">
                     {admins.length}
                   </span>
                 </div>

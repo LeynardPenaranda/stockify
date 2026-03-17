@@ -34,7 +34,7 @@ function RolePill({ role }: { role: AdminRole }) {
         "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold border",
         isSuper
           ? "bg-primary/10 text-primary border-primary/20"
-          : "bg-gray-50 text-gray-700 border-black/10",
+          : "bg-gray-50 text-[#17335e] border-black/10",
       ].join(" ")}
     >
       {isSuper ? (
@@ -115,7 +115,7 @@ export default function AdminsTable({
         <div className="mx-auto h-12 w-12 rounded-2xl bg-gray-50 border border-black/10 grid place-items-center">
           <User className="h-5 w-5 text-gray-500" />
         </div>
-        <div className="mt-3 text-sm font-semibold text-gray-900">
+        <div className="mt-3 text-sm font-semibold text-[#17335e]">
           No admins found
         </div>
         <div className="mt-1 text-xs text-gray-500">
@@ -180,7 +180,7 @@ export default function AdminsTable({
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">
+                          <div className="font-semibold text-[#17335e] truncate">
                             {a.displayName || "Unnamed"}
                           </div>
                           {isMe ? (
@@ -214,61 +214,61 @@ export default function AdminsTable({
 
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      {/* Disable / Enable */}
-                      <button
-                        type="button"
-                        onClick={() => onDisableAdmin(a)}
-                        disabled={!canManage}
-                        className={[
-                          "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition",
-                          "active:scale-[0.99] disabled:pointer-events-none",
-                          a.disabled
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                            : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100",
-                          canManage
-                            ? "cursor-pointer"
-                            : "opacity-50 cursor-not-allowed hover:bg-inherit",
-                        ].join(" ")}
-                        title={
-                          !isSuperAdmin
-                            ? "Only Super Admin can manage admins"
-                            : isMe
-                              ? "You cannot disable yourself"
-                              : ""
-                        }
-                      >
-                        {a.disabled ? (
-                          <UserCheck className="h-4 w-4" />
-                        ) : (
-                          <UserX className="h-4 w-4" />
-                        )}
+                      {!isMe ? (
+                        <>
+                          {/* Disable / Enable */}
+                          <button
+                            type="button"
+                            onClick={() => onDisableAdmin(a)}
+                            disabled={!canManage}
+                            className={[
+                              "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition",
+                              "active:scale-[0.99] disabled:pointer-events-none",
+                              a.disabled
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100",
+                              canManage
+                                ? "cursor-pointer"
+                                : "opacity-50 cursor-not-allowed hover:bg-inherit",
+                            ].join(" ")}
+                            title={
+                              !isSuperAdmin
+                                ? "Only Super Admin can manage admins"
+                                : ""
+                            }
+                          >
+                            {a.disabled ? (
+                              <UserCheck className="h-4 w-4" />
+                            ) : (
+                              <UserX className="h-4 w-4" />
+                            )}
 
-                        {a.disabled ? "Enable" : "Disable"}
-                      </button>
+                            {a.disabled ? "Enable" : "Disable"}
+                          </button>
 
-                      {/* Delete */}
-                      <button
-                        type="button"
-                        onClick={() => openDelete(a)}
-                        disabled={!canManage}
-                        className={[
-                          "inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-gray-800 transition",
-                          "hover:bg-black/5 active:scale-[0.99] disabled:pointer-events-none",
-                          canManage
-                            ? "cursor-pointer"
-                            : "opacity-50 cursor-not-allowed",
-                        ].join(" ")}
-                        title={
-                          !isSuperAdmin
-                            ? "Only Super Admin can delete admins"
-                            : isMe
-                              ? "You cannot delete yourself"
-                              : ""
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </button>
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => openDelete(a)}
+                            disabled={!canManage}
+                            className={[
+                              "inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-[#17335e] transition",
+                              "hover:bg-black/5 active:scale-[0.99] disabled:pointer-events-none",
+                              canManage
+                                ? "cursor-pointer"
+                                : "opacity-50 cursor-not-allowed",
+                            ].join(" ")}
+                            title={
+                              !isSuperAdmin
+                                ? "Only Super Admin can delete admins"
+                                : ""
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
