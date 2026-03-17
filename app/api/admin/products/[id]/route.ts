@@ -24,8 +24,36 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
+    const nextQuantity =
+      body.quantity !== undefined ? Number(body.quantity) : undefined;
+    const nextMinStock =
+      body.minStock !== undefined ? Number(body.minStock) : undefined;
+    const nextMaxStock =
+      body.maxStock !== undefined ? Number(body.maxStock) : undefined;
+
+    if (
+      nextQuantity !== undefined &&
+      (!Number.isFinite(nextQuantity) || nextQuantity < 0)
+    ) {
+      return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
+    }
+
+    if (
+      nextMinStock !== undefined &&
+      (!Number.isFinite(nextMinStock) || nextMinStock < 0)
+    ) {
+      return NextResponse.json({ error: "Invalid minStock" }, { status: 400 });
+    }
+
+    if (
+      nextMaxStock !== undefined &&
+      (!Number.isFinite(nextMaxStock) || nextMaxStock < 0)
+    ) {
+      return NextResponse.json({ error: "Invalid maxStock" }, { status: 400 });
+    }
 
     const ref = adminDb.collection("products").doc(id);
+    const analyticsRef = adminDb.collection("analytics_products").doc(id);
 
     // Read OUTSIDE tx if you need old image id for Cloudinary
     const snapOutside = await ref.get();
@@ -61,16 +89,42 @@ export async function PATCH(
       await recalcDashboardAnalyticsTx(tx);
 
       // Prepare patch
-      const patch: any = { updatedAt: now, updatedBy: decoded.uid };
+      const patch: Record<string, unknown> = {
+        updatedAt: now,
+        updatedBy: decoded.uid,
+      };
+      const analyticsPatch: Record<string, unknown> = {
+        updatedAt: now,
+        lastEventAt: now,
+        lastEventType: "product_update",
+        lastEventBy: decoded.uid,
+      };
 
       if (body.name !== undefined) patch.name = String(body.name).trim();
+      if (body.name !== undefined) analyticsPatch.name = String(body.name).trim();
       if (body.category !== undefined)
         patch.category = String(body.category).trim();
-      if (body.quantity !== undefined) patch.quantity = Number(body.quantity);
-      if (body.minStock !== undefined) patch.minStock = Number(body.minStock);
+      if (body.category !== undefined)
+        analyticsPatch.category = String(body.category).trim();
+      if (nextQuantity !== undefined) {
+        patch.quantity = nextQuantity;
+        analyticsPatch.quantity = nextQuantity;
+      }
+      if (nextMinStock !== undefined) {
+        patch.minStock = nextMinStock;
+        analyticsPatch.minStock = nextMinStock;
+      }
+      if (nextMaxStock !== undefined) {
+        patch.maxStock = nextMaxStock;
+        analyticsPatch.maxStock = nextMaxStock;
+      }
 
       if (body.expirationDate !== undefined)
         patch.expirationDate = body.expirationDate
+          ? String(body.expirationDate)
+          : null;
+      if (body.expirationDate !== undefined)
+        analyticsPatch.expirationDate = body.expirationDate
           ? String(body.expirationDate)
           : null;
 
@@ -78,6 +132,7 @@ export async function PATCH(
       if (body.supplier !== undefined) {
         const s = String(body.supplier ?? "").trim();
         patch.supplier = s ? s : null;
+        analyticsPatch.supplier = s ? s : null;
       }
 
       // Image patch
@@ -85,10 +140,14 @@ export async function PATCH(
         patch.imagePublicId = newPublicId;
         patch.imageUrl = newUrl;
         patch.imageFolder = newFolder ?? old?.imageFolder ?? null;
+        analyticsPatch.imagePublicId = newPublicId;
+        analyticsPatch.imageUrl = newUrl;
+        analyticsPatch.imageFolder = newFolder ?? old?.imageFolder ?? null;
       }
 
       // WRITES AFTER ALL READS
       tx.update(ref, patch);
+      tx.set(analyticsRef, analyticsPatch, { merge: true });
 
       tx.create(adminDb.collection("analytics_events").doc(), {
         type: "product_update",
