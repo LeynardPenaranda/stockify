@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Card, Table, Input, Select, Button, Tag, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
@@ -88,6 +88,7 @@ export default function StockOutPage() {
   const [userMap, setUserMap] = useState<
     Record<string, { name: string; email: string }>
   >({});
+  const attemptedUserResolvesRef = useRef<Record<string, true>>({});
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -211,7 +212,11 @@ export default function StockOutPage() {
             const hasEmail = Boolean(
               (r.stockOutByEmail ?? r.performedByEmail ?? "").trim(),
             );
-            return (!hasName || !hasEmail) && !userMap[uid] ? uid : "";
+            return (!hasName || !hasEmail) &&
+              !userMap[uid] &&
+              !attemptedUserResolvesRef.current[uid]
+              ? uid
+              : "";
           })
           .filter(Boolean),
       ),
@@ -220,6 +225,10 @@ export default function StockOutPage() {
     if (needUids.length === 0) return;
 
     (async () => {
+      needUids.forEach((uid) => {
+        attemptedUserResolvesRef.current[uid] = true;
+      });
+
       try {
         const res = await fetch("/api/admin/users/resolve", {
           method: "POST",
@@ -306,9 +315,12 @@ export default function StockOutPage() {
   }, [filtered, userMap, productMap]);
 
   return (
-    <div className="p-4 lg:p-6 space-y-4">
+    <div className="space-y-6 p-4 lg:p-6">
       {/* CHART */}
-      <Card className="rounded-2xl border-black/10">
+      <Card
+        className="mt-6 rounded-2xl shadow-none"
+        style={{ borderColor: "#17335e", borderWidth: 1 }}
+      >
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <div className="font-bold text-gray-900">Stock-Out Analytics</div>
@@ -340,8 +352,13 @@ export default function StockOutPage() {
         />
       </Card>
 
+      <div className="h-6" />
+
       {/* TABLE */}
-      <Card className="rounded-2xl border-black/10">
+      <Card
+        className="rounded-2xl shadow-none"
+        style={{ borderColor: "#17335e", borderWidth: 1 }}
+      >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm font-semibold text-gray-900">
             Stock-Out <span className="text-red-600">History</span>
@@ -382,6 +399,16 @@ export default function StockOutPage() {
           dataSource={filtered}
           pagination={{ pageSize: 10, showSizeChanger: false }}
           scroll={{ x: 1400 }}
+          className="
+            [&_.ant-table-thead>tr>th]:text-[#17335e]!
+            [&_.ant-table-thead>tr>th]:!font-black
+            [&_.ant-table-thead_.ant-table-column-title]:!font-black
+            [&_.ant-table-thead>tr>th]:border-y-[#17335e]!
+            [&_.ant-table-thead>tr>th:first-child]:border-l-[#17335e]!
+            [&_.ant-table-thead>tr>th:last-child]:border-r-[#17335e]!
+            [&_.ant-table-thead>tr>th+th]:border-l-[#17335e]/30!
+            [&_.ant-table-tbody>tr>td]:text-[#17335e]!
+          "
           columns={[
             {
               title: "Product",

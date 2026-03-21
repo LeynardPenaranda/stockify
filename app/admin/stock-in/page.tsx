@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Card, Table, Input, Select, Button, Tag, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
@@ -72,6 +72,7 @@ export default function StockInPage() {
   const [userMap, setUserMap] = useState<
     Record<string, { name: string; email: string }>
   >({});
+  const attemptedUserResolvesRef = useRef<Record<string, true>>({});
 
   // auth token
   useEffect(() => {
@@ -183,7 +184,12 @@ export default function StockInPage() {
             const hasName = Boolean((r.stockInByName ?? "").trim());
             const hasEmail = Boolean((r.stockInByEmail ?? "").trim());
             const uid = (r.createdBy ?? "").trim();
-            return uid && (!hasName || !hasEmail) && !userMap[uid];
+            return (
+              uid &&
+              (!hasName || !hasEmail) &&
+              !userMap[uid] &&
+              !attemptedUserResolvesRef.current[uid]
+            );
           })
           .map((r) => String(r.createdBy || "").trim())
           .filter(Boolean),
@@ -193,6 +199,10 @@ export default function StockInPage() {
     if (need.length === 0) return;
 
     (async () => {
+      need.forEach((uid) => {
+        attemptedUserResolvesRef.current[uid] = true;
+      });
+
       try {
         const res = await fetch("/api/admin/users/resolve", {
           method: "POST",
@@ -261,9 +271,12 @@ export default function StockInPage() {
   }, [filtered, userMap, productMap]);
 
   return (
-    <div className="p-4 lg:p-6 space-y-4">
+    <div className="space-y-6 p-4 lg:p-6">
       {/* CHART CARD */}
-      <Card className="rounded-2xl border-#17335e/10">
+      <Card
+        className="mt-6 rounded-2xl shadow-none"
+        style={{ borderColor: "#17335e", borderWidth: 1 }}
+      >
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <div className="font-bold text-#17335e">Stock-In Analytics</div>
@@ -295,8 +308,13 @@ export default function StockInPage() {
         />
       </Card>
 
+      <div className="h-6" />
+
       {/* TABLE CARD */}
-      <Card className="rounded-2xl border-#17335e/10">
+      <Card
+        className="rounded-2xl shadow-none"
+        style={{ borderColor: "#17335e", borderWidth: 1 }}
+      >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm font-semibold text-#17335e">
             Stock-In <span className="text-green-600">History</span>
@@ -335,6 +353,16 @@ export default function StockInPage() {
           dataSource={filtered}
           pagination={{ pageSize: 10, showSizeChanger: false }}
           scroll={{ x: 1200 }}
+          className="
+            [&_.ant-table-thead>tr>th]:text-[#17335e]!
+            [&_.ant-table-thead>tr>th]:!font-black
+            [&_.ant-table-thead_.ant-table-column-title]:!font-black
+            [&_.ant-table-thead>tr>th]:border-y-[#17335e]!
+            [&_.ant-table-thead>tr>th:first-child]:border-l-[#17335e]!
+            [&_.ant-table-thead>tr>th:last-child]:border-r-[#17335e]!
+            [&_.ant-table-thead>tr>th+th]:border-l-[#17335e]/30!
+            [&_.ant-table-tbody>tr>td]:text-[#17335e]!
+          "
           columns={[
             {
               title: "Product",

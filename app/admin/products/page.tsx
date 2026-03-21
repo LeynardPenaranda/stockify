@@ -452,7 +452,7 @@ export default function AdminProductsPage() {
 
   const columns = [
     {
-      title: <span className="font-semibold text-[#102a4d]">Product</span>,
+      title: <span className="font-black text-[#102a4d]">Product</span>,
       key: "product",
       render: (_: any, r: Product) => (
         <div className="flex items-center gap-3">
@@ -481,7 +481,7 @@ export default function AdminProductsPage() {
       ),
     },
     {
-      title: <span className="font-semibold text-[#102a4d]">Supplier</span>,
+      title: <span className="font-black text-[#102a4d]">Supplier</span>,
       dataIndex: "supplier",
       key: "supplier",
       width: 180,
@@ -489,7 +489,7 @@ export default function AdminProductsPage() {
         v ? String(v) : <span className="text-[#102a4d]">—</span>,
     },
     {
-      title: <span className="font-semibold text-[#102a4d]">Qty</span>,
+      title: <span className="font-black text-[#102a4d]">Qty</span>,
       dataIndex: "quantity",
       key: "quantity",
       width: 220,
@@ -537,21 +537,21 @@ export default function AdminProductsPage() {
       },
     },
     {
-      title: <span className="font-semibold text-[#102a4d]">Min</span>,
+      title: <span className="font-black text-[#102a4d]">Min</span>,
       dataIndex: "minStock",
       key: "minStock",
       width: 90,
       render: (v: any) => <span className="text-[#102a4d]">{safeNum(v)}</span>,
     },
     {
-      title: <span className="font-semibold text-[#102a4d]">Max</span>,
+      title: <span className="font-black text-[#102a4d]">Max</span>,
       dataIndex: "maxStock",
       key: "maxStock",
       width: 90,
       render: (v: any) => <span className="text-[#102a4d]">{safeNum(v)}</span>,
     },
     {
-      title: <span className="font-semibold text-[#102a4d]">Expiration</span>,
+      title: <span className="font-black text-[#102a4d]">Expiration</span>,
       dataIndex: "expirationDate",
       key: "expirationDate",
       width: 170,
@@ -616,7 +616,7 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-black/10 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#17335e] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -642,7 +642,10 @@ export default function AdminProductsPage() {
       </div>
 
       <div className="hidden md:block">
-        <Card className="rounded-2xl border-black/10">
+        <Card
+          className="rounded-2xl shadow-none"
+          style={{ borderColor: "#17335e", borderWidth: 1 }}
+        >
           <Table
             rowKey="id"
             loading={loading}
@@ -650,9 +653,16 @@ export default function AdminProductsPage() {
             dataSource={filtered}
             pagination={{ pageSize: 8, showSizeChanger: false }}
             className="
+              [&_.ant-table-wrapper]:border-[#17335e]
               [&_.ant-table-thead>tr>th]:text-[#102a4d]!
-              [&_.ant-table-thead>tr>th]:font-semibold
+              [&_.ant-table-thead>tr>th]:!font-black
+              [&_.ant-table-thead_.ant-table-column-title]:!font-black
+              [&_.ant-table-thead>tr>th]:border-y-[#17335e]!
+              [&_.ant-table-thead>tr>th:first-child]:border-l-[#17335e]!
+              [&_.ant-table-thead>tr>th:last-child]:border-r-[#17335e]!
+              [&_.ant-table-thead>tr>th+th]:border-l-[#17335e]/30!
               [&_.ant-table-tbody>tr>td]:text-[#102a4d]!
+              &_.ant-table-cell-row-hover]:bg-[#17335e]/3!
               [&_.ant-pagination]:text-[#102a4d]!
               [&_.ant-pagination-item>a]:text-[#102a4d]!
               [&_.ant-pagination-prev]:text-[#102a4d]!
@@ -674,11 +684,11 @@ export default function AdminProductsPage() {
 
       <div className="grid grid-cols-1 gap-3 md:hidden">
         {loading ? (
-          <Card className="rounded-2xl border-black/10">
+          <Card className="rounded-2xl border-[#17335e]">
             <div className="text-sm text-[#102a4d]">Loading…</div>
           </Card>
         ) : filtered.length === 0 ? (
-          <Card className="rounded-2xl border-black/10">
+          <Card className="rounded-2xl border-[#17335e]">
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
@@ -693,7 +703,7 @@ export default function AdminProductsPage() {
             return (
               <Card
                 key={p.id}
-                className="overflow-hidden rounded-2xl border-black/10 p-0"
+                className="overflow-hidden rounded-2xl border-[#17335e] p-0"
               >
                 <div className="relative h-56 w-full bg-black/5">
                   {p.imageUrl ? (
