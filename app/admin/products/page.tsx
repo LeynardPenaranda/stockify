@@ -109,7 +109,7 @@ export default function AdminProductsPage() {
   const primaryBtnClass =
     "border-0 bg-gradient-to-r from-[#17335e] to-[#29b6e8] text-white shadow-sm hover:from-[#12284a] hover:to-[#1fa3d2]";
   const stockAdjustBtnClass =
-    "grid place-items-center border border-[#b7e7ee] bg-gradient-to-r from-[#f4fcfd] to-[#cfeff4] text-[#29b6c8] shadow-sm transition hover:from-[#ecf9fb] hover:to-[#bee7ee] active:scale-[0.98]";
+    "grid place-items-center cursor-pointer border border-[#b7e7ee] bg-gradient-to-r from-[#f4fcfd] to-[#cfeff4] text-[#29b6c8] shadow-sm transition hover:from-[#ecf9fb] hover:to-[#bee7ee] active:scale-[0.98]";
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -581,7 +581,14 @@ export default function AdminProductsPage() {
       width: 180,
       render: (_: any, r: Product) => (
         <div className="flex items-center justify-end gap-2">
-          <Button className="text-[#102a4d]!" onClick={() => openEdit(r)}>
+          <Button
+            className="border-0! text-white! shadow-sm"
+            style={{
+              background: "linear-gradient(90deg, #2d7fce 0%, #43b1eb 100%)",
+              color: "#ffffff",
+            }}
+            onClick={() => openEdit(r)}
+          >
             Edit
             <SquarePen className="h-4 w-4" />
           </Button>
@@ -655,8 +662,8 @@ export default function AdminProductsPage() {
             className="
               [&_.ant-table-wrapper]:border-[#17335e]
               [&_.ant-table-thead>tr>th]:text-[#102a4d]!
-              [&_.ant-table-thead>tr>th]:!font-black
-              [&_.ant-table-thead_.ant-table-column-title]:!font-black
+              [&_.ant-table-thead>tr>th]:font-black!
+              [&_.ant-table-thead_.ant-table-column-title]:font-black!
               [&_.ant-table-thead>tr>th]:border-y-[#17335e]!
               [&_.ant-table-thead>tr>th:first-child]:border-l-[#17335e]!
               [&_.ant-table-thead>tr>th:last-child]:border-r-[#17335e]!
@@ -792,7 +799,12 @@ export default function AdminProductsPage() {
                   <div className="mt-4 flex items-center justify-end gap-2">
                     <Button
                       size="small"
-                      className="text-[#102a4d]!"
+                      className="border-0! text-white! shadow-sm"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, #2d7fce 0%, #43b1eb 100%)",
+                        color: "#ffffff",
+                      }}
                       onClick={() => openEdit(p)}
                     >
                       Edit
