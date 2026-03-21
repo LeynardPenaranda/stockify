@@ -499,7 +499,7 @@ export default function AdminProductsPage() {
             <button
               type="button"
               onClick={() => openStockOutForProduct(r)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
               aria-label="Stock-out"
             >
               <Minus className="h-4 w-4" />
@@ -512,7 +512,7 @@ export default function AdminProductsPage() {
             <button
               type="button"
               onClick={() => openStockInForProduct(r)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
               aria-label="Stock-in"
               disabled={r.quantity >= r.maxStock}
             >
@@ -739,7 +739,7 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => openStockOutForProduct(p)}
-                        className="grid h-10 w-10 place-items-center rounded-xl border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
+                        className="grid h-10 w-10 place-items-center rounded-xl border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
                         aria-label="Stock-out"
                       >
                         <Minus className="h-4 w-4" />
@@ -752,7 +752,7 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => openStockInForProduct(p)}
-                        className="grid h-10 w-10 place-items-center rounded-xl border border-black/10 bg-white text-[#102a4d] transition hover:bg-black/5 active:scale-[0.98]"
+                        className="grid h-10 w-10 place-items-center rounded-xl border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
                         aria-label="Stock-in"
                         disabled={p.quantity >= p.maxStock}
                       >

@@ -81,7 +81,7 @@ export default function AdminLoginCard({ onSuccess }: Props) {
   }
 
   return (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6 border border-black/10">
+    <div className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-8 text-[#17335e] shadow-2xl space-y-6">
       <div className="text-center space-y-1 flex justify-start items-center">
         <Image
           src={"/stockify-logo.png"}
@@ -93,18 +93,17 @@ export default function AdminLoginCard({ onSuccess }: Props) {
           <h1 className="text-2xl font-semibold tracking-tight">
             STOCKIFY Inventory
           </h1>
-          <p className="text-sm text-gray-500">Sign in to continue</p>
+          <p className="text-sm text-[#17335e]">Sign in to continue</p>
         </div>
       </div>
 
       <form onSubmit={onLogin} className="space-y-4">
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Email</label>
+          <label className="text-sm font-medium text-[#17335e]">Email</label>
           <input
             disabled={loading}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary transition disabled:opacity-60"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-[#17335e] outline-none transition placeholder:text-[#17335e]/60 focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e] disabled:opacity-60"
             placeholder="e.g., admin@gmail.com"
-            style={{ color: "var(--color-primary)" }}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
@@ -112,12 +111,11 @@ export default function AdminLoginCard({ onSuccess }: Props) {
         </div>
 
         <div className="space-y-1 relative">
-          <label className="text-sm font-medium text-gray-700">Password</label>
+          <label className="text-sm font-medium text-[#17335e]">Password</label>
           <input
             disabled={loading}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-primary focus:border-primary pr-10 transition disabled:opacity-60"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-[#17335e] outline-none transition placeholder:text-[#17335e]/60 focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e] disabled:opacity-60"
             placeholder="••••••••"
-            style={{ color: "var(--color-primary)" }}
             type={isOpenEye ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -126,7 +124,7 @@ export default function AdminLoginCard({ onSuccess }: Props) {
           <button
             type="button"
             disabled={loading}
-            className="absolute top-7 right-2 p-1 rounded-md hover:bg-gray-100 disabled:opacity-50"
+            className="absolute top-7 right-2 rounded-md p-1 text-[#17335e] hover:bg-gray-100 disabled:opacity-50"
             onClick={() => setIsOpenEye((v) => !v)}
             aria-label={isOpenEye ? "Hide password" : "Show password"}
           >
@@ -142,13 +140,13 @@ export default function AdminLoginCard({ onSuccess }: Props) {
           type="button"
           onClick={onForgotPassword}
           disabled={!canReset}
-          className="text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="cursor-pointer text-xs text-[#17335e] underline hover:text-[#0f2443] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {sendingReset ? "Sending..." : "Forgot password?"}
         </button>
 
         {err && (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-[#17335e]">
             {err}
           </div>
         )}
