@@ -661,6 +661,7 @@ export default function AdminProductsPage() {
             pagination={{ pageSize: 8, showSizeChanger: false }}
             className="
               [&_.ant-table-wrapper]:border-[#17335e]
+              [&_.ant-table-thead>tr>th]:bg-gray-100!
               [&_.ant-table-thead>tr>th]:text-[#102a4d]!
               [&_.ant-table-thead>tr>th]:font-black!
               [&_.ant-table-thead_.ant-table-column-title]:font-black!

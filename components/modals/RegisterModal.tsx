@@ -46,7 +46,7 @@ function CopyLine({
     : displayValue;
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-[#17335e] bg-white px-3 py-2">
+    <div className="flex items-center gap-2 rounded-xl border border-[#17335e]/30 bg-white px-3 py-2">
       <div className="w-20 text-[11px] font-semibold uppercase tracking-wide text-[#17335e]">
         {label}
       </div>
@@ -61,7 +61,7 @@ function CopyLine({
           setCopied(true);
           window.setTimeout(() => setCopied(false), 900);
         }}
-        className="shrink-0 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#17335e] px-3 py-1.5 text-xs text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        className="shrink-0 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#17335e]/30 px-3 py-1.5 text-xs text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         {copied ? "Copied" : "Copy"}
@@ -155,7 +155,7 @@ export default function RegisterAdminModal({
       {/* Panel */}
       <div
         className={[
-          "relative w-155 max-w-[95vw] rounded-2xl border border-[#17335e] bg-white shadow-2xl overflow-hidden",
+          "relative w-155 max-w-[95vw] rounded-2xl border border-[#17335e]/30 bg-white shadow-2xl overflow-hidden",
           // responsive height + prevent off-screen on small displays
           "max-h-[92dvh] sm:max-h-[88vh]",
           // layout so body can scroll while header stays visible
@@ -163,10 +163,10 @@ export default function RegisterAdminModal({
         ].join(" ")}
       >
         {/* Header */}
-        <div className="shrink-0 flex items-start justify-between gap-3 border-b border-[#17335e] px-5 py-4 sm:px-6">
+        <div className="shrink-0 flex items-start justify-between gap-3 border-b border-[#17335e]/30 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl border border-[#17335e] bg-primary/10">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl border border-[#17335e]/30 bg-primary/10">
                 <ShieldPlus className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
@@ -186,7 +186,7 @@ export default function RegisterAdminModal({
               if (!locked) onClose();
             }}
             disabled={locked}
-            className="cursor-pointer rounded-xl border border-[#17335e] p-2 text-[#17335e] transition hover:bg-black/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-xl border border-[#17335e]/30 p-2 text-[#17335e] transition hover:bg-black/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close"
             title="Close"
           >
@@ -199,7 +199,7 @@ export default function RegisterAdminModal({
           <div className="p-5 sm:p-6">
             <form onSubmit={onSubmit} className="space-y-4">
               {/* Copy credentials */}
-              <div className="rounded-2xl border border-[#17335e] bg-gray-50 p-4">
+              <div className="rounded-2xl border border-[#17335e]/30 bg-gray-50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-gray-900">
@@ -215,7 +215,7 @@ export default function RegisterAdminModal({
                     type="button"
                     onClick={onCopyAll}
                     disabled={!email || !password}
-                    className="shrink-0 cursor-pointer rounded-xl border border-[#17335e] bg-white px-3 py-2 text-xs text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="shrink-0 cursor-pointer rounded-xl border border-[#17335e]/30 bg-white px-3 py-2 text-xs text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="inline-flex items-center gap-2">
                       {copiedAll ? (
@@ -266,7 +266,7 @@ export default function RegisterAdminModal({
                     styles={{
                       popup: {
                         root: {
-                          border: "1px solid #17335e",
+                          border: "1px solid rgba(23, 51, 94, 0.3)",
                         },
                       },
                     }}
@@ -284,7 +284,7 @@ export default function RegisterAdminModal({
                   Display Name
                 </label>
                 <input
-                  className="w-full rounded-xl border border-[#17335e] bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e]/30"
+                  className="w-full rounded-xl border border-[#17335e]/30 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e]/30"
                   placeholder="Juan Dela Cruz"
                   value={displayName}
                   onChange={(e) => onChangeDisplayName(e.target.value)}
@@ -298,7 +298,7 @@ export default function RegisterAdminModal({
                   Admin Email
                 </label>
                 <input
-                  className="w-full rounded-xl border border-[#17335e] bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e]/30"
+                  className="w-full rounded-xl border border-[#17335e]/30 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e]/30"
                   placeholder="admin@stockify.com"
                   value={email}
                   onChange={(e) => onChangeEmail(e.target.value)}
@@ -314,7 +314,7 @@ export default function RegisterAdminModal({
                 <div className="relative">
                   <input
                     type={showPw ? "text" : "password"}
-                    className="w-full rounded-xl border border-[#17335e] bg-white px-3 py-2 pr-11 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e]/30"
+                    className="w-full rounded-xl border border-[#17335e]/30 bg-white px-3 py-2 pr-11 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#17335e] focus:ring-2 focus:ring-[#17335e]/30"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => onChangePassword(e.target.value)}
@@ -343,7 +343,7 @@ export default function RegisterAdminModal({
                     if (!locked) onClose();
                   }}
                   disabled={locked}
-                  className="cursor-pointer rounded-xl border border-[#17335e] px-4 py-2 text-sm text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer rounded-xl border border-[#17335e]/30 px-4 py-2 text-sm text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -357,7 +357,7 @@ export default function RegisterAdminModal({
                 </button>
               </div>
 
-              <div className="border-t border-[#17335e] pt-3 text-xs text-gray-500">
+              <div className="border-t border-[#17335e]/30 pt-3 text-xs text-gray-500">
                 <strong>Tip:</strong> This is a temporary password. Ask the new
                 admin to use{" "}
                 <span className="font-semibold">“Forgot password?”</span> on the

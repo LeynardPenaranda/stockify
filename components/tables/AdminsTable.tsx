@@ -129,24 +129,24 @@ export default function AdminsTable({
     <>
       <div className="w-full overflow-x-auto">
         <table className="min-w-245 w-full text-sm">
-          <thead className="sticky top-0 bg-white z-10">
-            <tr className="border-b border-black/10">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">
+          <thead className="sticky top-0 z-10 bg-gray-100">
+            <tr className="border-b border-[#17335e]/30">
+              <th className="bg-gray-100 px-4 py-3 text-left text-xs font-black text-[#17335e]">
                 Admin
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">
+              <th className="bg-gray-100 px-4 py-3 text-left text-xs font-black text-[#17335e]">
                 Role
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">
+              <th className="bg-gray-100 px-4 py-3 text-left text-xs font-black text-[#17335e]">
                 Status
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">
+              <th className="bg-gray-100 px-4 py-3 text-left text-xs font-black text-[#17335e]">
                 Created
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">
+              <th className="bg-gray-100 px-4 py-3 text-left text-xs font-black text-[#17335e]">
                 Last sign-in
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">
+              <th className="bg-gray-100 px-4 py-3 text-right text-xs font-black text-[#17335e]">
                 Actions
               </th>
             </tr>

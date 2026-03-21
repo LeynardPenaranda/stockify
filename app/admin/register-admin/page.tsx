@@ -355,12 +355,12 @@ export default function AdminsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl bg-gray-50 border border-black/5 px-3 py-2.5">
-              <div className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+            <div className="flex flex-col gap-2 rounded-xl border border-[#17335e]/10 bg-[#f4f6fb] px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#17335e]">
+                <span className="inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
                 Live updates enabled
               </div>
-              <div className="text-[11px] text-gray-500">
+              <div className="text-[11px] text-[#17335e]/75">
                 Tip: Use “Disable” to temporarily restrict access without
                 deleting the account.
               </div>
