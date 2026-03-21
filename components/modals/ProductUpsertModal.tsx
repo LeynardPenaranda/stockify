@@ -73,9 +73,10 @@ export default function ProductUpsertModal({
     [fileList, setFileList],
   );
 
-  const inputClass = "bg-white text-[#102a4d] placeholder:text-[#102a4d]/45";
+  const inputClass =
+    "border-[#17335e] bg-white text-[#102a4d] placeholder:text-[#102a4d]/45 focus:border-[#17335e] focus:shadow-none hover:border-[#17335e]";
   const dateInputClass =
-    "bg-white text-[#102a4d] placeholder:text-[#102a4d]/45";
+    "border-[#17335e] bg-white text-[#102a4d] placeholder:text-[#102a4d]/45 focus:border-[#17335e] focus:shadow-none hover:border-[#17335e]";
   const labelClass = "mb-1 text-xs text-[#102a4d]";
   const helperTextClass = "text-xs text-[#102a4d]";
 
@@ -99,7 +100,7 @@ export default function ProductUpsertModal({
       }}
       cancelButtonProps={{
         className:
-          "!text-[#102a4d] !border-black/10 hover:!text-[#17335e] hover:!border-[#17335e]",
+          "!border-[#17335e] !text-[#102a4d] hover:!border-[#17335e] hover:!text-[#17335e]",
       }}
       styles={{
         body: {
