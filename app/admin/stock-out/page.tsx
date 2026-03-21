@@ -334,7 +334,11 @@ export default function StockOutPage() {
               if (!idToken) return message.error("Not authenticated");
               exportStockOutLogsCsv(enrichedForExport);
             }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-0! text-white! shadow-sm"
+            style={{
+              background: "linear-gradient(90deg, #17335e 0%, #29b6e8 100%)",
+              color: "#ffffff",
+            }}
           >
             <ArrowDownToLine size={15} />
             <span className="hidden sm:inline">Stock Out Report</span>
