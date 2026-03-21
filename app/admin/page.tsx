@@ -547,9 +547,9 @@ export default function AdminPage() {
             <button
               onClick={loadAll}
               className={[
-                "inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2",
-                "text-xs font-medium text-[#17335e] transition",
-                "hover:bg-sky-600 hover:text-white hover:border-sky-600",
+                "inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 px-3 py-2",
+                "bg-[#245ea9] text-xs font-medium text-white shadow-sm transition",
+                "hover:bg-[#1f4f8d]",
                 "active:scale-[0.99]",
               ].join(" ")}
               type="button"

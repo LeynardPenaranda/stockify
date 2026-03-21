@@ -334,7 +334,7 @@ export default function AdminsPage() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="h-9 px-3 sm:px-4 rounded-xl bg-primary text-white text-xs sm:text-sm font-medium hover:opacity-95 active:scale-[0.99] transition inline-flex items-center justify-center"
+                  className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl bg-[#245ea9] px-3 text-xs font-medium text-white transition hover:bg-[#1f4f8d] active:scale-[0.99] sm:px-4 sm:text-sm"
                 >
                   <span className="hidden sm:inline">Register Admin</span>
                   <span className="sm:hidden">New</span>
@@ -344,7 +344,7 @@ export default function AdminsPage() {
                   type="button"
                   onClick={fetchAdmins}
                   disabled={loadingAdmins}
-                  className="h-9 w-9 rounded-xl border border-black/10 bg-white text-[#17335e] hover:bg-black/5 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-0 bg-[#245ea9] text-white shadow-sm transition hover:bg-[#1f4f8d] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Refresh admins"
                   title="Refresh"
                 >

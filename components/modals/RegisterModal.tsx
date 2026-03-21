@@ -185,7 +185,7 @@ export default function RegisterAdminModal({
               if (!locked) onClose();
             }}
             disabled={locked}
-            className="rounded-xl border border-black/10 p-2 hover:bg-black/5 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="cursor-pointer rounded-xl border border-black/10 p-2 text-[#17335e] transition hover:bg-black/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close"
             title="Close"
           >
@@ -330,7 +330,7 @@ export default function RegisterAdminModal({
                     if (!locked) onClose();
                   }}
                   disabled={locked}
-                  className="rounded-xl border border-black/10 px-4 py-2 text-sm hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer rounded-xl border border-black/10 px-4 py-2 text-sm text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -338,7 +338,7 @@ export default function RegisterAdminModal({
                 <button
                   disabled={loading}
                   type="submit"
-                  className="rounded-xl bg-primary text-white px-4 py-2 text-sm font-medium hover:opacity-95 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer rounded-xl bg-[#245ea9] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1f4f8d] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? "Registering..." : "Register Admin"}
                 </button>
