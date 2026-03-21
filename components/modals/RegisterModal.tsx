@@ -46,11 +46,11 @@ function CopyLine({
 
   return (
     <div className="flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2">
-      <div className="w-20 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+      <div className="w-20 text-[11px] font-semibold uppercase tracking-wide text-[#17335e]">
         {label}
       </div>
-      <div className="flex-1 min-w-0 text-sm text-gray-900 truncate">
-        {shown || <span className="text-gray-400">(empty)</span>}
+      <div className="flex-1 min-w-0 truncate text-sm text-[#17335e]">
+        {shown || <span className="text-[#17335e]/60">(empty)</span>}
       </div>
       <button
         type="button"
@@ -60,7 +60,7 @@ function CopyLine({
           setCopied(true);
           window.setTimeout(() => setCopied(false), 900);
         }}
-        className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs text-[#17335e] hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         {copied ? "Copied" : "Copy"}
@@ -214,7 +214,7 @@ export default function RegisterAdminModal({
                     type="button"
                     onClick={onCopyAll}
                     disabled={!email || !password}
-                    className="shrink-0 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs text-[#17335e] hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="shrink-0 cursor-pointer rounded-xl border border-black/10 bg-white px-3 py-2 text-xs text-[#17335e] transition hover:bg-black/5 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="inline-flex items-center gap-2">
                       {copiedAll ? (

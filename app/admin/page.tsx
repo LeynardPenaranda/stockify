@@ -148,7 +148,7 @@ function CardShell({
   return (
     <div
       className={[
-        "rounded-2xl border bg-white p-4 shadow-sm",
+        "rounded-2xl border border-[#17335e] bg-white p-4 shadow-sm",
         "transition hover:shadow-md",
         className,
       ].join(" ")}
@@ -189,7 +189,7 @@ function StatCard({
   return (
     <div
       className={[
-        "group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm",
+        "group relative overflow-hidden rounded-2xl border border-[#17335e] bg-white p-4 shadow-sm",
         "transition hover:shadow-md",
       ].join(" ")}
     >
@@ -224,7 +224,7 @@ function StatCard({
 
 function SkeletonCard() {
   return (
-    <div className="rounded-2xl border bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-[#17335e] bg-white p-4 shadow-sm">
       <div className="animate-pulse">
         <div className="h-3 w-28 rounded bg-slate-200" />
         <div className="mt-3 h-8 w-20 rounded bg-slate-200" />
@@ -752,14 +752,14 @@ export default function AdminPage() {
           >
             <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
               {loading ? (
-                <div className="rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <div className="rounded-xl border border-[#17335e] bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   Loading events…
                 </div>
               ) : eventRows.length ? (
                 eventRows.map((ev) => (
                   <div
                     key={ev.key}
-                    className="rounded-xl border bg-white px-3 py-2 transition hover:bg-slate-50"
+                    className="rounded-xl border border-[#17335e] bg-white px-3 py-2 transition hover:bg-slate-50"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -811,7 +811,7 @@ export default function AdminPage() {
                   </div>
                 ))
               ) : (
-                <div className="rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <div className="rounded-xl border border-[#17335e] bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   No events yet.
                 </div>
               )}
