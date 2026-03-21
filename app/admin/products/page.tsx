@@ -109,7 +109,7 @@ export default function AdminProductsPage() {
   const primaryBtnClass =
     "border-0 bg-gradient-to-r from-[#17335e] to-[#29b6e8] text-white shadow-sm hover:from-[#12284a] hover:to-[#1fa3d2]";
   const stockAdjustBtnClass =
-    "grid place-items-center border border-[#9edfec] bg-gradient-to-r from-[#17335e] to-[#9edfec] text-white shadow-sm transition hover:from-[#12284a] hover:to-[#7fd2e6] active:scale-[0.98]";
+    "grid place-items-center border border-[#b7e7ee] bg-gradient-to-r from-[#f4fcfd] to-[#cfeff4] text-[#29b6c8] shadow-sm transition hover:from-[#ecf9fb] hover:to-[#bee7ee] active:scale-[0.98]";
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {

@@ -60,7 +60,7 @@ function CopyLine({
           setCopied(true);
           window.setTimeout(() => setCopied(false), 900);
         }}
-        className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-black/10 px-3 py-1.5 text-xs text-[#17335e] hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         {copied ? "Copied" : "Copy"}
@@ -214,7 +214,7 @@ export default function RegisterAdminModal({
                     type="button"
                     onClick={onCopyAll}
                     disabled={!email || !password}
-                    className="shrink-0 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="shrink-0 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs text-[#17335e] hover:bg-black/5 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="inline-flex items-center gap-2">
                       {copiedAll ? (
