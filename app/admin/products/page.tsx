@@ -107,7 +107,9 @@ export default function AdminProductsPage() {
   const [userEmail, setUserEmail] = useState<string>("");
 
   const primaryBtnClass =
-    "bg-primary hover:bg-hover border-primary hover:border-hover text-white";
+    "border-0 bg-gradient-to-r from-[#17335e] to-[#29b6e8] text-white shadow-sm hover:from-[#12284a] hover:to-[#1fa3d2]";
+  const stockAdjustBtnClass =
+    "grid place-items-center border border-[#9edfec] bg-gradient-to-r from-[#17335e] to-[#9edfec] text-white shadow-sm transition hover:from-[#12284a] hover:to-[#7fd2e6] active:scale-[0.98]";
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -499,7 +501,7 @@ export default function AdminProductsPage() {
             <button
               type="button"
               onClick={() => openStockOutForProduct(r)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
+              className={`${stockAdjustBtnClass} h-9 w-9 rounded-lg`}
               aria-label="Stock-out"
             >
               <Minus className="h-4 w-4" />
@@ -512,7 +514,7 @@ export default function AdminProductsPage() {
             <button
               type="button"
               onClick={() => openStockInForProduct(r)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
+              className={`${stockAdjustBtnClass} h-9 w-9 rounded-lg`}
               aria-label="Stock-in"
               disabled={r.quantity >= r.maxStock}
             >
@@ -607,7 +609,7 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={openCreate}
-          className={`inline-flex items-center gap-2 rounded-xl bg-[#102a4d] px-4 py-2.5 text-sm text-white ${primaryBtnClass} cursor-pointer transition active:scale-[0.98]`}
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm ${primaryBtnClass} cursor-pointer transition active:scale-[0.98]`}
         >
           <PlusOutlined />
           Add Product
@@ -739,7 +741,7 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => openStockOutForProduct(p)}
-                        className="grid h-10 w-10 place-items-center rounded-xl border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
+                        className={`${stockAdjustBtnClass} h-10 w-10 rounded-xl`}
                         aria-label="Stock-out"
                       >
                         <Minus className="h-4 w-4" />
@@ -752,7 +754,7 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => openStockInForProduct(p)}
-                        className="grid h-10 w-10 place-items-center rounded-xl border border-[#17335e] bg-[#17335e] text-white transition hover:border-[#0f2443] hover:bg-[#0f2443] active:scale-[0.98]"
+                        className={`${stockAdjustBtnClass} h-10 w-10 rounded-xl`}
                         aria-label="Stock-in"
                         disabled={p.quantity >= p.maxStock}
                       >

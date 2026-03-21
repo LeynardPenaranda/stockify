@@ -541,9 +541,6 @@ export default function AdminPage() {
             <h1 className="text-xl font-semibold text-[#17335e]">
               Stockify Dashboard
             </h1>
-            <div className="mt-1 text-xs text-[#17335e]">
-              {loading ? "Loading…" : "Live inventory analytics"}
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -561,9 +558,6 @@ export default function AdminPage() {
               Refresh
             </button>
 
-            <div className="rounded-full border bg-white px-3 py-2 text-xs text-[#17335e]">
-              {loading ? "Syncing…" : "Live"}
-            </div>
           </div>
         </div>
 
